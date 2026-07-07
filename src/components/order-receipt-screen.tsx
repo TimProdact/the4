@@ -12,6 +12,13 @@ const statusLabel: Record<Order["status"], string> = {
   refunded: "Возврат",
 };
 
+const statusTone: Record<Order["status"], string> = {
+  paid: "bg-[var(--stock-pill-bg)] text-[var(--state-success)]",
+  pending: "bg-[var(--stock-pill-bg)] text-[var(--state-warning)]",
+  failed: "bg-[var(--state-error-bg)] text-[var(--state-error)]",
+  refunded: "bg-[var(--stock-pill-bg)] text-[var(--muted)]",
+};
+
 interface OrderReceiptScreenProps {
   order: Order;
 }
@@ -24,22 +31,14 @@ export function OrderReceiptScreen({ order }: OrderReceiptScreenProps) {
         <h1 className="mt-4 text-center text-2xl font-semibold tracking-tight">
           № {order.receipt}
         </h1>
-        <p
-          className={`mt-3 text-sm font-medium ${
-            order.status === "paid"
-              ? "text-emerald-700"
-              : order.status === "pending"
-                ? "text-amber-700"
-                : order.status === "failed"
-                  ? "text-[var(--accent)]"
-                  : "text-[var(--muted)]"
-          }`}
+        <span
+          className={`mt-3 rounded-full px-4 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${statusTone[order.status]}`}
         >
           {statusLabel[order.status]}
-        </p>
+        </span>
 
-        <div className="mt-8 w-full max-w-sm space-y-3 border border-black/10 bg-white/30 px-5 py-5 text-sm">
-          <Row label="Издание" value="SHIZARU OKSANA — 1st Edition" />
+        <div className="mt-8 w-full max-w-sm space-y-3 border border-[var(--sheet-border)] bg-[var(--fg)]/5 px-5 py-5 text-sm">
+          <Row label="Издание" value={`${order.receipt}`} />
           <Row label="Сумма" value={formatPrice(order.amount)} />
           <Row label="Имя" value={order.buyer.name} />
           <Row label="Телефон" value={formatPhoneUz(order.buyer.phone)} />
@@ -51,7 +50,7 @@ export function OrderReceiptScreen({ order }: OrderReceiptScreenProps) {
         </div>
 
         {order.status === "paid" && (
-          <p className="mt-6 text-center text-xs text-amber-800">
+          <p className="mt-6 text-center text-xs text-[var(--state-success)]">
             Ачивка «Владелец The4» добавлена в Taneesh
           </p>
         )}
@@ -65,7 +64,7 @@ export function OrderReceiptScreen({ order }: OrderReceiptScreenProps) {
         {order.status === "failed" && (
           <Link
             href="/"
-            className="mt-8 w-full max-w-sm bg-[var(--btn)] py-4 text-center text-sm font-semibold uppercase tracking-[0.2em] text-[#e8e6e1]"
+            className="mt-8 w-full max-w-sm bg-[var(--btn)] py-4 text-center text-sm font-semibold uppercase tracking-[0.2em] text-[var(--btn-text)]"
           >
             Попробовать снова
           </Link>

@@ -11,6 +11,8 @@ import {
 } from "@/lib/api";
 import { formatPhoneUz, formatPrice, isValidPhoneUz } from "@/lib/format";
 import { useHoldCountdown } from "@/hooks/use-hold-countdown";
+import { StatePanel } from "./state-panel";
+import type { CheckoutPreview } from "@/lib/preview";
 
 type Step =
   | "summary"
@@ -29,6 +31,8 @@ interface CheckoutSheetProps {
   snap: DropSnapshot;
   prefill?: { name?: string; phone?: string };
   offline?: boolean;
+  initialStep?: CheckoutPreview;
+  previewFailedOrderId?: number;
 }
 
 export function CheckoutSheet({
@@ -37,9 +41,11 @@ export function CheckoutSheet({
   snap,
   prefill,
   offline,
+  initialStep,
+  previewFailedOrderId,
 }: CheckoutSheetProps) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("summary");
+  const [step, setStep] = useState<Step>((initialStep as Step) ?? "summary");
   const [holdId, setHoldId] = useState<string | null>(null);
   const [holdExpiresAt, setHoldExpiresAt] = useState<number | null>(null);
   const [name, setName] = useState(prefill?.name || "");
@@ -54,14 +60,18 @@ export function CheckoutSheet({
 
   useEffect(() => {
     if (!open) return;
-    setStep("summary");
+    setStep(initialStep ?? "summary");
     setError("");
-    setHoldId(null);
-    setHoldExpiresAt(null);
-    setFailedOrderId(null);
+    setHoldId(initialStep && initialStep !== "summary" ? "preview-hold" : null);
+    setHoldExpiresAt(
+      initialStep && !["summary", "hold_expired", "race_lost", "payment_failed"].includes(initialStep)
+        ? Date.now() + 5 * 60_000
+        : null,
+    );
+    setFailedOrderId(previewFailedOrderId ?? null);
     if (prefill?.name) setName(prefill.name);
     if (prefill?.phone) setPhone(formatPhoneUz(prefill.phone));
-  }, [open, prefill?.name, prefill?.phone]);
+  }, [open, prefill?.name, prefill?.phone, initialStep, previewFailedOrderId]);
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -174,22 +184,22 @@ export function CheckoutSheet({
         onClick={closeSheet}
       />
 
-      <div className="animate-slide-up relative flex max-h-[70vh] min-h-[50vh] w-full flex-col bg-[#f5f4f0] px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-12px_48px_rgba(0,0,0,0.15)]">
-        <div className="mx-auto mb-4 h-1 w-10 shrink-0 rounded-full bg-black/15" />
+      <div className="animate-slide-up relative flex max-h-[70vh] min-h-[50vh] w-full flex-col bg-[var(--sheet-bg)] px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 text-[var(--sheet-fg)] shadow-[0_-12px_48px_rgba(0,0,0,0.15)]">
+        <div className="mx-auto mb-4 h-1 w-10 shrink-0 rounded-full bg-[var(--fg)]/15" />
 
         {holdExpiresAt && !["hold_expired", "race_lost", "summary"].includes(step) && (
-          <p className="mb-3 text-center text-xs text-[var(--muted)]">
-            Резерв · <span className="font-mono text-[var(--fg)]">{holdLabel}</span>
+          <p className="mb-3 text-center text-xs text-[var(--sheet-muted)]">
+            Резерв · <span className="font-mono text-[var(--sheet-fg)]">{holdLabel}</span>
           </p>
         )}
 
         {step === "summary" && (
           <>
-            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--sheet-muted)]">
               Order Summary
             </p>
             <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center bg-black/5 text-[0.55rem] uppercase tracking-wider text-[var(--muted)]">
+              <div className="flex h-16 w-16 items-center justify-center bg-[var(--fg)]/5 text-[0.55rem] uppercase tracking-wider text-[var(--sheet-muted)]">
                 3D
               </div>
               <div>
@@ -199,12 +209,12 @@ export function CheckoutSheet({
                 <p className="text-lg font-semibold">{formatPrice(snap.price)}</p>
               </div>
             </div>
-            {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-4 text-center text-sm text-[var(--state-error)]">{error}</p>}
             <button
               type="button"
               disabled={loading || snap.phase === "sold_out" || offline}
               onClick={startHold}
-              className="mt-auto w-full bg-black py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white disabled:opacity-50"
+              className="mt-auto w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--btn-text)] disabled:opacity-50"
             >
               {loading ? "Резерв…" : "Продолжить"}
             </button>
@@ -213,24 +223,24 @@ export function CheckoutSheet({
 
         {step === "identity" && (
           <>
-            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--sheet-muted)]">
               Ваши данные
             </p>
             <input
-              className="mt-6 w-full border-b border-black/20 bg-transparent py-3 text-base outline-none"
+              className="mt-6 w-full border-b border-[var(--sheet-border)] bg-transparent py-3 text-base outline-none"
               placeholder="Имя"
               value={name}
               onChange={e => setName(e.target.value)}
               autoComplete="name"
             />
             <input
-              className="mt-4 w-full border-b border-black/20 bg-transparent py-3 text-base outline-none"
+              className="mt-4 w-full border-b border-[var(--sheet-border)] bg-transparent py-3 text-base outline-none"
               placeholder="+998 XX XXX XX XX"
               value={phone}
               onChange={e => setPhone(formatPhoneUz(e.target.value))}
               inputMode="tel"
             />
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-2 text-sm text-[var(--state-error)]">{error}</p>}
             <button
               type="button"
               onClick={() => {
@@ -241,7 +251,7 @@ export function CheckoutSheet({
                 setError("");
                 setStep("delivery");
               }}
-              className="mt-auto w-full bg-black py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white"
+              className="mt-auto w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--btn-text)]"
             >
               Далее
             </button>
@@ -250,7 +260,7 @@ export function CheckoutSheet({
 
         {step === "delivery" && (
           <>
-            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--sheet-muted)]">
               Доставка
             </p>
             <div className="mt-6 flex gap-2">
@@ -261,8 +271,8 @@ export function CheckoutSheet({
                   onClick={() => setDeliveryType(t)}
                   className={`flex-1 border py-3 text-xs uppercase tracking-wider ${
                     deliveryType === t
-                      ? "border-black bg-black text-white"
-                      : "border-black/20 text-black/60"
+                      ? "border-[var(--btn)] bg-[var(--btn)] text-[var(--btn-text)]"
+                      : "border-[var(--sheet-border)] text-[var(--sheet-muted)]"
                   }`}
                 >
                   {t === "delivery" ? "Доставка" : "Самовывоз"}
@@ -271,18 +281,18 @@ export function CheckoutSheet({
             </div>
             {deliveryType === "delivery" ? (
               <input
-                className="mt-4 w-full border-b border-black/20 bg-transparent py-3 text-base outline-none"
+                className="mt-4 w-full border-b border-[var(--sheet-border)] bg-transparent py-3 text-base outline-none"
                 placeholder="Адрес"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
               />
             ) : (
-              <p className="mt-4 text-sm text-[var(--muted)]">{DROP_CONFIG.pickupAddress}</p>
+              <p className="mt-4 text-sm text-[var(--sheet-muted)]">{DROP_CONFIG.pickupAddress}</p>
             )}
             <button
               type="button"
               onClick={() => setStep("payment")}
-              className="mt-auto w-full bg-black py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white"
+              className="mt-auto w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--btn-text)]"
             >
               К оплате
             </button>
@@ -291,11 +301,11 @@ export function CheckoutSheet({
 
         {step === "payment" && (
           <>
-            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="text-center text-xs uppercase tracking-[0.2em] text-[var(--sheet-muted)]">
               Оплата
             </p>
             <p className="mt-4 text-center text-2xl font-semibold">{formatPrice(snap.price)}</p>
-            {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-4 text-center text-sm text-[var(--state-error)]">{error}</p>}
             <div className="mt-6 space-y-2">
               <button
                 type="button"
@@ -314,7 +324,7 @@ export function CheckoutSheet({
               <button
                 type="button"
                 onClick={() => pay("google")}
-                className="w-full rounded-lg border border-black/15 py-3.5 text-sm"
+                className="w-full rounded-lg border border-[var(--sheet-border)] py-3.5 text-sm"
               >
                 Google Pay
               </button>
@@ -324,32 +334,32 @@ export function CheckoutSheet({
 
         {step === "processing" && (
           <div className="flex flex-1 flex-col items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-black/20 border-t-black" />
-            <p className="mt-4 text-sm text-[var(--muted)]">Обработка платежа…</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--fg)]/20 border-t-[var(--fg)]" />
+            <p className="mt-4 text-sm text-[var(--sheet-muted)]">Обработка платежа…</p>
           </div>
         )}
 
         {step === "pending" && (
           <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500/30 border-t-amber-600" />
-            <h3 className="mt-6 text-lg font-semibold">Ожидаем банк</h3>
-            <p className="mt-2 max-w-xs text-sm text-[var(--muted)]">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--state-warning)]/30 border-t-[var(--state-warning)]" />
+            <h3 className="mt-6 text-lg font-semibold text-[var(--state-warning)]">Ожидаем банк</h3>
+            <p className="mt-2 max-w-xs text-sm text-[var(--sheet-muted)]">
               Платёж в обработке. Обычно это занимает несколько секунд.
             </p>
           </div>
         )}
 
         {step === "hold_expired" && (
-          <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
-            <h3 className="text-lg font-semibold">Резерв сгорел</h3>
-            <p className="mt-2 max-w-xs text-sm text-[var(--muted)]">
-              5 минут истекли. Забронируй снова, чтобы продолжить покупку.
-            </p>
+          <StatePanel
+            title="Резерв сгорел"
+            description="5 минут истекли. Забронируй снова, чтобы продолжить покупку."
+            tone="warning"
+          >
             <button
               type="button"
               onClick={startHold}
               disabled={loading}
-              className="mt-8 w-full bg-black py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white disabled:opacity-50"
+              className="mt-8 w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--btn-text)] disabled:opacity-50"
             >
               {loading ? "Резерв…" : "Забронировать снова"}
             </button>
@@ -360,37 +370,35 @@ export function CheckoutSheet({
             >
               Закрыть
             </button>
-          </div>
+          </StatePanel>
         )}
 
         {step === "race_lost" && (
-          <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
-            <h3 className="text-lg font-semibold uppercase tracking-wide text-[var(--accent)]">
-              Успели раньше
-            </h3>
-            <p className="mt-2 max-w-xs text-sm text-[var(--muted)]">
-              Последний экземпляр только что забрали. Edition closed.
-            </p>
+          <StatePanel
+            title="Успели раньше"
+            description="Последний экземпляр только что забрали. Edition closed."
+            tone="error"
+          >
             <button
               type="button"
               onClick={closeSheet}
-              className="mt-8 w-full bg-black py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white"
+              className="mt-8 w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--btn-text)]"
             >
               Закрыть
             </button>
-          </div>
+          </StatePanel>
         )}
 
         {step === "payment_failed" && (
-          <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
-            <h3 className="text-lg font-semibold">Оплата отклонена</h3>
-            <p className="mt-2 max-w-xs text-sm text-[var(--muted)]">
-              Банк не подтвердил транзакцию. Попробуй другой способ или карту.
-            </p>
+          <StatePanel
+            title="Оплата отклонена"
+            description="Банк не подтвердил транзакцию. Попробуй другой способ или карту."
+            tone="error"
+          >
             <button
               type="button"
               onClick={() => setStep("payment")}
-              className="mt-6 w-full bg-black py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white"
+              className="mt-6 w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--btn-text)]"
             >
               Попробовать снова
             </button>
@@ -403,7 +411,7 @@ export function CheckoutSheet({
                 Открыть чек
               </button>
             )}
-          </div>
+          </StatePanel>
         )}
       </div>
     </div>

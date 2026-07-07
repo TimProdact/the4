@@ -44,6 +44,22 @@ body {
     color 0.45s ease;
 }
 
+:root {
+  --stock-pill-bg: color-mix(in srgb, var(--accent) 16%, var(--bg));
+  --stock-pill-text: color-mix(in srgb, var(--accent) 70%, var(--fg));
+  --stock-sold-text: var(--muted);
+  --sheet-bg: #f5f4f0;
+  --sheet-fg: var(--fg);
+  --sheet-muted: var(--muted);
+  --sheet-border: rgba(0, 0, 0, 0.12);
+  --state-success: #15803d;
+  --state-warning: #b45309;
+  --state-error: var(--accent);
+  --state-error-bg: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  --overlay-scrim: rgba(0, 0, 0, 0.4);
+  --soldout-stamp: var(--fg);
+}
+
 @keyframes slide-up {
   from {
     transform: translateY(100%);

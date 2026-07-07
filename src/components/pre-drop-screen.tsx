@@ -5,6 +5,7 @@ import { Logo } from "./logo";
 import { useCountdown } from "@/hooks/use-countdown";
 import { joinWaitlist, unlockVip } from "@/lib/api";
 import { DropToolbar } from "./drop-toolbar";
+import { useTheme } from "@/lib/theme-context";
 
 interface PreDropScreenProps {
   startsAt: string;
@@ -13,6 +14,7 @@ interface PreDropScreenProps {
 }
 
 export function PreDropScreen({ startsAt, onVipUnlock, onTimerDone }: PreDropScreenProps) {
+  const { theme } = useTheme();
   const { h, m, s, done } = useCountdown(startsAt);
   const [vipOpen, setVipOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -57,30 +59,34 @@ export function PreDropScreen({ startsAt, onVipUnlock, onTimerDone }: PreDropScr
   };
 
   return (
-    <main className="grid h-[100dvh] grid-rows-[auto_1fr_auto] bg-black text-white">
-      <DropToolbar variant="dark" />
+    <main className="theme-screen grid h-[100dvh] grid-rows-[auto_1fr_auto] bg-[var(--bg)] text-[var(--fg)]">
+      <DropToolbar variant={theme.toolbarVariant} shareTitle={`THE4 — ${theme.name}`} />
 
       <div className="flex flex-col items-center justify-center px-6">
-        <Logo variant="light" onLongPress={() => setVipOpen(true)} />
+        <span className="rounded-full bg-[var(--stock-pill-bg)] px-4 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--stock-pill-text)]">
+          Pre-Drop
+        </span>
+
+        <Logo variant={theme.toolbarVariant === "dark" ? "light" : "dark"} onLongPress={() => setVipOpen(true)} />
 
         <p
-          className="mt-16 font-mono text-4xl font-light tracking-[0.15em] tabular-nums md:text-5xl"
+          className="mt-12 font-mono text-4xl font-light tracking-[0.15em] tabular-nums md:text-5xl"
           aria-live="polite"
         >
           {h} : {m} : {s}
         </p>
 
-        <p className="mt-8 text-center text-sm text-white/50">Дроп скоро откроется</p>
+        <p className="mt-8 text-center text-sm text-[var(--muted)]">Дроп скоро откроется</p>
 
         {waitlistDone ? (
-          <p className="mt-6 text-center text-xs uppercase tracking-[0.2em] text-emerald-400">
+          <p className="mt-6 text-center text-xs uppercase tracking-[0.2em] text-[var(--state-success)]">
             Ты в waitlist — напишем перед стартом
           </p>
         ) : (
           <button
             type="button"
             onClick={() => setWaitlistOpen(true)}
-            className="mt-6 text-xs uppercase tracking-[0.25em] text-white/70 underline underline-offset-4"
+            className="mt-6 text-xs uppercase tracking-[0.25em] text-[var(--fg)]/70 underline underline-offset-4"
           >
             Уведомить меня
           </button>
@@ -90,7 +96,7 @@ export function PreDropScreen({ startsAt, onVipUnlock, onTimerDone }: PreDropScr
       {vipOpen && (
         <form
           onSubmit={submitVip}
-          className="border-t border-white/10 px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+          className="border-t border-[var(--sheet-border)] px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
         >
           <input
             type="password"
@@ -98,13 +104,13 @@ export function PreDropScreen({ startsAt, onVipUnlock, onTimerDone }: PreDropScr
             placeholder="VIP access"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full border-b border-white/30 bg-transparent py-3 text-center text-sm uppercase tracking-widest outline-none placeholder:text-white/30"
+            className="w-full border-b border-[var(--sheet-border)] bg-transparent py-3 text-center text-sm uppercase tracking-widest outline-none placeholder:text-[var(--muted)]"
           />
-          {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
+          {error && <p className="mt-2 text-center text-xs text-[var(--state-error)]">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="mt-4 w-full py-3 text-xs uppercase tracking-[0.25em] text-white/70"
+            className="mt-4 w-full py-3 text-xs uppercase tracking-[0.25em] text-[var(--muted)]"
           >
             {loading ? "…" : "Enter"}
           </button>
@@ -114,7 +120,7 @@ export function PreDropScreen({ startsAt, onVipUnlock, onTimerDone }: PreDropScr
       {waitlistOpen && (
         <form
           onSubmit={submitWaitlist}
-          className="border-t border-white/10 px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+          className="border-t border-[var(--sheet-border)] px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
         >
           <input
             type="text"
@@ -122,13 +128,13 @@ export function PreDropScreen({ startsAt, onVipUnlock, onTimerDone }: PreDropScr
             placeholder="Телефон или email"
             value={contact}
             onChange={e => setContact(e.target.value)}
-            className="w-full border-b border-white/30 bg-transparent py-3 text-center text-sm outline-none placeholder:text-white/30"
+            className="w-full border-b border-[var(--sheet-border)] bg-transparent py-3 text-center text-sm outline-none placeholder:text-[var(--muted)]"
           />
-          {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
+          {error && <p className="mt-2 text-center text-xs text-[var(--state-error)]">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="mt-4 w-full py-3 text-xs uppercase tracking-[0.25em] text-white/70"
+            className="mt-4 w-full py-3 text-xs uppercase tracking-[0.25em] text-[var(--muted)]"
           >
             {loading ? "…" : "В waitlist"}
           </button>

@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useState } from "react";
-import { DROP_THEMES, applyTheme, type DropTheme } from "@/lib/drop-themes";
+import { DROP_THEMES, type DropTheme } from "@/lib/drop-themes";
+import { useTheme } from "@/lib/theme-context";
 import { formatPrice } from "@/lib/format";
 import { ErrorBoundary } from "./error-boundary";
 
@@ -35,21 +36,27 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
 }
 
 export function ProductSlider({ onThemeChange }: ProductSliderProps) {
+  const { setTheme } = useTheme();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center", duration: 28 });
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const selectTheme = useCallback(
+    (theme: DropTheme) => {
+      setTheme(theme);
+      onThemeChange?.(theme);
+    },
+    [onThemeChange, setTheme],
+  );
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
     const idx = emblaApi.selectedScrollSnap();
     setActiveIndex(idx);
-    const theme = DROP_THEMES[idx];
-    applyTheme(theme);
-    onThemeChange?.(theme);
-  }, [emblaApi, onThemeChange]);
+    selectTheme(DROP_THEMES[idx]);
+  }, [emblaApi, selectTheme]);
 
   useEffect(() => {
-    applyTheme(DROP_THEMES[0]);
-    onThemeChange?.(DROP_THEMES[0]);
+    selectTheme(DROP_THEMES[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -66,7 +73,6 @@ export function ProductSlider({ onThemeChange }: ProductSliderProps) {
 
   const scrollPrev = () => emblaApi?.scrollPrev();
   const scrollNext = () => emblaApi?.scrollNext();
-
   const theme = DROP_THEMES[activeIndex];
 
   return (

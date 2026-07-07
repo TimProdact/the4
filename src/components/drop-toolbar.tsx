@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { asset } from "@/lib/asset";
+import { StockPill } from "./stock-pill";
 
 interface DropToolbarProps {
   variant?: "light" | "dark";
   stock?: number;
   totalStock?: number;
   soldOut?: boolean;
+  allHeld?: boolean;
   shareTitle?: string;
   shareText?: string;
 }
@@ -52,6 +54,7 @@ export function DropToolbar({
   stock,
   totalStock,
   soldOut = false,
+  allHeld = false,
   shareTitle = "THE4",
   shareText = "Limited drop on THE4",
 }: DropToolbarProps) {
@@ -60,16 +63,12 @@ export function DropToolbar({
   const showStock = stock !== undefined && totalStock !== undefined;
 
   const circleClass = dark
-    ? "flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition active:scale-95"
-    : "flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-[var(--bg)] text-[var(--fg)] transition active:scale-95";
+    ? "flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[var(--fg)] transition active:scale-95"
+    : "flex h-11 w-11 items-center justify-center rounded-full border border-[var(--fg)]/10 bg-[var(--bg)] text-[var(--fg)] transition active:scale-95";
 
   const handleShare = async () => {
     const url = window.location.href;
-    const payload = {
-      title: shareTitle,
-      text: shareText,
-      url,
-    };
+    const payload = { title: shareTitle, text: shareText, url };
 
     if (navigator.share) {
       try {
@@ -102,24 +101,15 @@ export function DropToolbar({
       </Link>
 
       {showStock ? (
-        <p
-          className={`text-center text-xs font-medium tracking-wide ${
-            dark
-              ? soldOut
-                ? "text-white/50"
-                : "text-red-400"
-              : soldOut
-                ? "text-[var(--muted)]"
-                : "text-[var(--accent)]"
-          }`}
-          style={
-            dark || soldOut
-              ? undefined
-              : { textShadow: "0 0 20px rgba(255,45,45,0.35)" }
-          }
-        >
-          {soldOut ? "SOLD OUT" : `Осталось: ${stock} / ${totalStock}`}
-        </p>
+        <div className="flex justify-center">
+          <StockPill
+            stock={stock}
+            totalStock={totalStock}
+            soldOut={soldOut}
+            allHeld={allHeld}
+            lowStock={!soldOut && !allHeld && stock <= 3}
+          />
+        </div>
       ) : (
         <span aria-hidden />
       )}

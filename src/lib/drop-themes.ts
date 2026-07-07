@@ -301,6 +301,8 @@ export function getThemeById(id: string) {
 export function applyTheme(theme: DropTheme) {
   const root = document.documentElement;
   const c = theme.colors;
+  const dark = theme.toolbarVariant === "dark";
+
   root.style.setProperty("--bg", c.bg);
   root.style.setProperty("--fg", c.fg);
   root.style.setProperty("--muted", c.muted);
@@ -309,6 +311,23 @@ export function applyTheme(theme: DropTheme) {
   root.style.setProperty("--btn-text", c.btnText);
   root.style.setProperty("--selection-bg", c.selectionBg);
   root.style.setProperty("--selection-fg", c.selectionFg);
-  root.style.setProperty("--theme-transition", "background-color 0.45s ease, color 0.45s ease");
+
+  root.style.setProperty("--stock-pill-bg", `color-mix(in srgb, ${c.accent} 16%, ${c.bg})`);
+  root.style.setProperty("--stock-pill-text", `color-mix(in srgb, ${c.accent} 70%, ${c.fg})`);
+  root.style.setProperty("--stock-sold-text", c.muted);
+
+  root.style.setProperty("--sheet-bg", dark ? `color-mix(in srgb, ${c.fg} 6%, ${c.bg})` : "#f5f4f0");
+  root.style.setProperty("--sheet-fg", c.fg);
+  root.style.setProperty("--sheet-muted", c.muted);
+  root.style.setProperty("--sheet-border", dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)");
+
+  root.style.setProperty("--state-success", dark ? "#6ee7a8" : "#15803d");
+  root.style.setProperty("--state-warning", dark ? "#fbbf24" : "#b45309");
+  root.style.setProperty("--state-error", c.accent);
+  root.style.setProperty("--state-error-bg", `color-mix(in srgb, ${c.accent} 12%, ${c.bg})`);
+
+  root.style.setProperty("--overlay-scrim", dark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.4)");
+  root.style.setProperty("--soldout-stamp", c.fg);
+
   root.style.backgroundColor = c.bg;
 }

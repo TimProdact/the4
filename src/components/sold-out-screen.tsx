@@ -1,20 +1,36 @@
 "use client";
 
-import { ProductHero } from "./product-hero";
 import { ScreenShell } from "./screen-shell";
+import { ProductSlider } from "./product-slider";
+import { useTheme } from "@/lib/theme-context";
 import { DROP_CONFIG } from "@/lib/drop-config";
 
 export function SoldOutScreen() {
+  const { theme } = useTheme();
+
   return (
-    <ScreenShell dimmed stock={0} totalStock={DROP_CONFIG.totalStock} soldOut>
+    <ScreenShell
+      dimmed
+      stock={0}
+      totalStock={DROP_CONFIG.totalStock}
+      soldOut
+      toolbarVariant={theme.toolbarVariant}
+      shareTitle={`THE4 — ${theme.name}`}
+      shareText={`${theme.name} — Sold Out`}
+    >
       <section className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden">
-        <ProductHero
-          name={DROP_CONFIG.name}
-          edition={DROP_CONFIG.edition}
-          price={DROP_CONFIG.price}
-        />
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
-          <span className="border-4 border-white px-6 py-3 text-xl font-bold uppercase tracking-[0.35em] text-white md:text-2xl">
+        <ProductSlider />
+        <div
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          style={{ background: "var(--overlay-scrim)" }}
+        >
+          <span
+            className="border-4 px-6 py-3 text-xl font-bold uppercase tracking-[0.35em] md:text-2xl"
+            style={{
+              borderColor: "var(--soldout-stamp)",
+              color: "var(--soldout-stamp)",
+            }}
+          >
             Sold Out
           </span>
         </div>
