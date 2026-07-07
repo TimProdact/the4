@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The4 — Single Screen Drop (6 фаз)
 
-## Getting Started
-
-First, run the development server:
+## Запуск
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Фазы
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Фаза | URL | Как тестировать |
+|------|-----|-----------------|
+| 1 Pre-Drop | `/` | `DROP_STARTS_AT` в будущем |
+| 1 VIP | долгий тап на логотип | пароль `THE4` |
+| 2 Active | `/` | по умолчанию (drop в прошлом) |
+| 2 Sold Out | `/` | купить 14 раз или `stock=0` |
+| 3 Checkout | BUY NOW | шторка 60% снизу |
+| 5 Success | после оплаты | оверлей на медиа-зоне |
+| 6 Realtime | SSE | `/api/stock/stream` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Taneesh deep link
 
-## Learn More
+```
+/?name=Алишер&phone=998901234567
+```
 
-To learn more about Next.js, take a look at the following resources:
+Поля автозаполняются в checkout.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Pre-Drop
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+DROP_STARTS_AT=2026-12-31T12:00:00.000Z npm run dev
+```
 
-## Deploy on Vercel
+## API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `GET /api/drop` — статус
+- `POST /api/vip` — ранний доступ
+- `POST /api/hold` — резерв 5 мин
+- `POST /api/checkout` — оплата (mock Paylov)
+- `GET /api/stock/stream` — SSE stock/phase
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Paylov
+
+Кнопка «ОПЛАТИТЬ ЧЕРЕЗ PAYLOV» — UI готов, подключить API в `api/checkout/route.ts`.

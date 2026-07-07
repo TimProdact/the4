@@ -1,0 +1,28 @@
+export const DROP_CONFIG = {
+  productSlug: "oksana-01",
+  name: "SHIZARU OKSANA",
+  edition: "1st Edition",
+  price: 500_000,
+  currency: "UZS",
+  totalStock: 100,
+  /** ISO — до этого момента Pre-Drop. По умолчанию в прошлом = Active. */
+  startsAt: process.env.DROP_STARTS_AT || "2020-01-01T00:00:00.000Z",
+  vipPassword: process.env.VIP_PASSWORD || "THE4",
+  pickupAddress: "Ташкент, Magic City Event Hall",
+  holdMinutes: 5,
+  images: [
+    "https://images.unsplash.com/photo-1615485503744-192c76a5de68?w=1200&q=85&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1578301978693-85fa9c0320b4?w=1200&q=85&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1200&q=85&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1610701596007-6a2494ebbfdb?w=1200&q=85&auto=format&fit=crop",
+  ],
+} as const;
+
+export type DropPhase = "pre_drop" | "active" | "sold_out";
+
+export function computePhase(stock: number, vipOverride: boolean, now = Date.now()): DropPhase {
+  if (stock <= 0) return "sold_out";
+  if (vipOverride) return "active";
+  if (now < new Date(DROP_CONFIG.startsAt).getTime()) return "pre_drop";
+  return "active";
+}
