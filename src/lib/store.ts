@@ -1,4 +1,5 @@
-import { DROP_CONFIG, computePhase, type DropPhase } from "./drop-config";
+import { DROP_CONFIG, refreshPhase, type DropPhase } from "./drop-config";
+import type { Order, WaitlistEntry } from "./types";
 
 export interface DropSnapshot {
   phase: DropPhase;
@@ -7,6 +8,9 @@ export interface DropSnapshot {
   startsAt: string;
   holds: Record<string, { expiresAt: number }>;
   lastOrderId: number;
+  paused: boolean;
+  orders: Order[];
+  waitlist: WaitlistEntry[];
 }
 
 const g = globalThis as typeof globalThis & { __the4Store?: DropSnapshot };
@@ -19,6 +23,9 @@ function createStore(): DropSnapshot {
     startsAt: DROP_CONFIG.startsAt,
     holds: {},
     lastOrderId: 1000,
+    paused: false,
+    orders: [],
+    waitlist: [],
   };
 }
 
@@ -28,10 +35,6 @@ export function getStore(): DropSnapshot {
     refreshPhase(g.__the4Store);
   }
   return g.__the4Store;
-}
-
-export function refreshPhase(store: DropSnapshot, vipOverride = false) {
-  store.phase = computePhase(store.stock, vipOverride);
 }
 
 export function purgeExpiredHolds(store: DropSnapshot) {
@@ -78,5 +81,40 @@ export function getPublicSnapshot(vipOverride = false) {
     name: DROP_CONFIG.name,
     edition: DROP_CONFIG.edition,
     images: DROP_CONFIG.images,
+    paused: store.paused,
   };
+}
+
+export function getAdminSnapshot() {
+  const store = getStore();
+  purgeExpiredHolds(store);
+  return {
+    stock: store.stock,
+    totalStock: store.totalStock,
+    available: availableStock(store),
+    paused: store.paused,
+    startsAt: store.startsAt,
+    holds: Object.entries(store.holds).map(([id, h]) => ({
+      id,
+      expiresAt: h.expiresAt,
+    })),
+    orders: [...store.orders].reverse(),
+    waitlist: [...store.waitlist].reverse(),
+  };
+}
+
+export function getOrderById(id: number) {
+  return getStore().orders.find(o => o.id === id) ?? null;
+}
+
+export function releaseHold(holdId: string) {
+  const store = getStore();
+  delete store.holds[holdId];
+  notify();
+}
+
+export function clearAllHolds() {
+  const store = getStore();
+  store.holds = {};
+  notify();
 }

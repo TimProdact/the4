@@ -11,8 +11,6 @@ export function Logo({ variant = "dark", onLongPress }: LogoProps) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pressing, setPressing] = useState(false);
 
-  const color = variant === "light" ? "text-white" : "text-[var(--fg)]";
-
   const start = () => {
     if (!onLongPress) return;
     setPressing(true);
@@ -27,21 +25,24 @@ export function Logo({ variant = "dark", onLongPress }: LogoProps) {
     setPressing(false);
   };
 
+  const src =
+    variant === "light" ? "/the4-logo-white.png" : "/the4-logo-black.png";
+
   return (
-    <div className="flex h-full items-center justify-center">
-      <span
-        role="img"
-        aria-label="The4"
+    <div className="flex items-center justify-center py-1">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt="The4"
+        draggable={false}
         onPointerDown={start}
         onPointerUp={end}
         onPointerLeave={end}
         onContextMenu={e => e.preventDefault()}
-        className={`select-none text-[1.35rem] font-semibold tracking-[0.35em] md:text-[1.5rem] ${color} ${
+        className={`h-5 w-auto select-none md:h-6 ${
           pressing ? "opacity-60" : ""
         } ${onLongPress ? "cursor-default touch-none" : ""}`}
-      >
-        THE4
-      </span>
+      />
     </div>
   );
 }

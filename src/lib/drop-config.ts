@@ -8,6 +8,7 @@ export const DROP_CONFIG = {
   /** ISO — до этого момента Pre-Drop. По умолчанию в прошлом = Active. */
   startsAt: process.env.DROP_STARTS_AT || "2020-01-01T00:00:00.000Z",
   vipPassword: process.env.VIP_PASSWORD || "THE4",
+  adminPassword: process.env.ADMIN_PASSWORD || "THE4ADMIN",
   pickupAddress: "Ташкент, Magic City Event Hall",
   holdMinutes: 5,
   images: [
@@ -18,11 +19,27 @@ export const DROP_CONFIG = {
   ],
 } as const;
 
-export type DropPhase = "pre_drop" | "active" | "sold_out";
+export type DropPhase = "pre_drop" | "active" | "sold_out" | "paused";
 
-export function computePhase(stock: number, vipOverride: boolean, now = Date.now()): DropPhase {
+export function computePhase(
+  stock: number,
+  vipOverride: boolean,
+  now = Date.now(),
+  startsAt: string = DROP_CONFIG.startsAt,
+): DropPhase {
   if (stock <= 0) return "sold_out";
   if (vipOverride) return "active";
-  if (now < new Date(DROP_CONFIG.startsAt).getTime()) return "pre_drop";
+  if (now < new Date(startsAt).getTime()) return "pre_drop";
   return "active";
+}
+
+export function refreshPhase(
+  store: { phase: DropPhase; stock: number; paused: boolean; startsAt: string },
+  vipOverride = false,
+) {
+  if (store.paused) {
+    store.phase = "paused";
+    return;
+  }
+  store.phase = computePhase(store.stock, vipOverride, Date.now(), store.startsAt);
 }

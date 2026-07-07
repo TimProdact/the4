@@ -1,65 +1,75 @@
-import { DROP_CONFIG } from "@/lib/drop-config";
+import { DROP_CONFIG } from "./drop-config";
+import {
+  adminActionClient,
+  adminFetchClient,
+  adminLoginClient,
+  completeCheckoutClient,
+  createHoldClient,
+  fetchDropClient,
+  fetchOrderClient,
+  joinWaitlistClient,
+  releaseHoldClient,
+  unlockVipClient,
+} from "./client-store";
+import type {
+  AdminSnapshot,
+  CheckoutResult,
+  DropSnapshot,
+  Order,
+} from "./types";
 
-export type DropPhase = "pre_drop" | "active" | "sold_out";
-
-export interface DropSnapshot {
-  phase: DropPhase;
-  stock: number;
-  available: number;
-  totalStock: number;
-  startsAt: string;
-  price: number;
-  currency: string;
-  name: string;
-  edition: string;
-  images: readonly string[];
-}
-
-export interface CheckoutResult {
-  ok: boolean;
-  orderId: number;
-  receipt: string;
-  taneeshAchievement: string;
-}
+export type { AdminSnapshot, CheckoutResult, DropSnapshot, Order };
+export type DropPhase = DropSnapshot["phase"];
+export { DROP_CONFIG };
 
 export async function fetchDrop(vip = false): Promise<DropSnapshot> {
-  const res = await fetch(`/api/drop${vip ? "?vip=1" : ""}`, { cache: "no-store" });
-  return res.json();
+  return fetchDropClient(vip);
 }
 
 export async function unlockVip(password: string) {
-  const res = await fetch("/api/vip", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Ошибка");
-  return data;
+  return unlockVipClient(password);
 }
 
 export async function createHold() {
-  const res = await fetch("/api/hold", { method: "POST" });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Ошибка резерва");
-  return data as { holdId: string; expiresAt: number };
+  return createHoldClient();
+}
+
+export async function releaseHold(holdId: string) {
+  releaseHoldClient(holdId);
 }
 
 export async function completeCheckout(payload: {
   holdId: string;
+  holdExpiresAt?: number;
   name: string;
   phone: string;
   deliveryType: "delivery" | "pickup";
   address: string;
+  paymentMethod?: "paylov" | "apple" | "google";
 }) {
-  const res = await fetch("/api/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Ошибка оплаты");
-  return data as CheckoutResult;
+  return completeCheckoutClient(payload);
 }
 
-export { DROP_CONFIG };
+export async function fetchOrder(id: number): Promise<Order> {
+  return fetchOrderClient(id);
+}
+
+export async function joinWaitlist(contact: string) {
+  return joinWaitlistClient(contact);
+}
+
+export async function adminLogin(password: string) {
+  return adminLoginClient(password);
+}
+
+export async function adminFetch(token: string): Promise<AdminSnapshot> {
+  return adminFetchClient(token);
+}
+
+export async function adminAction(
+  token: string,
+  action: string,
+  payload: Record<string, unknown> = {},
+) {
+  return adminActionClient(token, action, payload);
+}

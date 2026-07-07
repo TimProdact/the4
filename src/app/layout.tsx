@@ -8,9 +8,25 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://the4-drop.netlify.app"),
   title: "The4 — SHIZARU OKSANA",
   description: "1st Edition. Limited drop.",
   robots: "noindex",
+  openGraph: {
+    title: "THE4 — SHIZARU OKSANA",
+    description: "1st Edition · Limited drop",
+    url: "https://the4-drop.netlify.app",
+    siteName: "THE4",
+    images: [{ url: "/og-drop.png", width: 1200, height: 630, alt: "SHIZARU OKSANA" }],
+    locale: "ru_RU",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "THE4 — SHIZARU OKSANA",
+    description: "1st Edition · Limited drop",
+    images: ["/og-drop.png"],
+  },
 };
 
 export const viewport: Viewport = {
