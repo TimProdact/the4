@@ -36,29 +36,25 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
 }
 
 export function ProductSlider({ onThemeChange }: ProductSliderProps) {
-  const { setTheme } = useTheme();
+  const { themeIndex, setThemeIndex } = useTheme();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center", duration: 28 });
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  const selectTheme = useCallback(
-    (theme: DropTheme) => {
-      setTheme(theme);
-      onThemeChange?.(theme);
-    },
-    [onThemeChange, setTheme],
-  );
+  const [activeIndex, setActiveIndex] = useState(themeIndex);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
     const idx = emblaApi.selectedScrollSnap();
     setActiveIndex(idx);
-    selectTheme(DROP_THEMES[idx]);
-  }, [emblaApi, selectTheme]);
+    setThemeIndex(idx);
+    onThemeChange?.(DROP_THEMES[idx]);
+  }, [emblaApi, onThemeChange, setThemeIndex]);
 
   useEffect(() => {
-    selectTheme(DROP_THEMES[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!emblaApi) return;
+    if (emblaApi.selectedScrollSnap() !== themeIndex) {
+      emblaApi.scrollTo(themeIndex);
+    }
+    setActiveIndex(themeIndex);
+  }, [emblaApi, themeIndex]);
 
   useEffect(() => {
     if (!emblaApi) return;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { asset } from "@/lib/asset";
+import { useTheme } from "@/lib/theme-context";
 import { StockPill } from "./stock-pill";
 
 interface DropToolbarProps {
@@ -59,6 +60,7 @@ export function DropToolbar({
   shareText = "Limited drop on THE4",
 }: DropToolbarProps) {
   const [shared, setShared] = useState(false);
+  const { theme, nextTheme } = useTheme();
   const dark = variant === "dark";
   const showStock = stock !== undefined && totalStock !== undefined;
 
@@ -108,6 +110,8 @@ export function DropToolbar({
             soldOut={soldOut}
             allHeld={allHeld}
             lowStock={!soldOut && !allHeld && stock <= 3}
+            onCycleTheme={nextTheme}
+            themeLabel={theme.name}
           />
         </div>
       ) : (

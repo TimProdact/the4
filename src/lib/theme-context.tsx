@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   DROP_THEMES,
   applyTheme,
@@ -10,11 +18,19 @@ import {
 
 interface ThemeContextValue {
   theme: DropTheme;
+  themeIndex: number;
   setTheme: (theme: DropTheme) => void;
   setThemeById: (id: string) => void;
+  setThemeIndex: (index: number) => void;
+  nextTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+function indexOfTheme(id: string) {
+  const idx = DROP_THEMES.findIndex(t => t.id === id);
+  return idx >= 0 ? idx : 0;
+}
 
 export function ThemeProvider({
   children,
@@ -23,19 +39,38 @@ export function ThemeProvider({
   children: ReactNode;
   initialThemeId?: string;
 }) {
-  const [theme, setTheme] = useState(() => getThemeById(initialThemeId ?? DROP_THEMES[0].id));
+  const [themeIndex, setThemeIndex] = useState(() =>
+    initialThemeId ? indexOfTheme(initialThemeId) : 0,
+  );
+
+  const theme = DROP_THEMES[themeIndex];
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
+  const setTheme = useCallback((next: DropTheme) => {
+    setThemeIndex(indexOfTheme(next.id));
+  }, []);
+
+  const setThemeById = useCallback((id: string) => {
+    setThemeIndex(indexOfTheme(id));
+  }, []);
+
+  const nextTheme = useCallback(() => {
+    setThemeIndex(i => (i + 1) % DROP_THEMES.length);
+  }, []);
+
   const value = useMemo(
     () => ({
       theme,
+      themeIndex,
       setTheme,
-      setThemeById: (id: string) => setTheme(getThemeById(id)),
+      setThemeById,
+      setThemeIndex,
+      nextTheme,
     }),
-    [theme],
+    [theme, themeIndex, setTheme, setThemeById, nextTheme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
@@ -46,8 +81,11 @@ export function useTheme() {
   if (!ctx) {
     return {
       theme: DROP_THEMES[0],
+      themeIndex: 0,
       setTheme: () => {},
       setThemeById: () => {},
+      setThemeIndex: () => {},
+      nextTheme: () => {},
     };
   }
   return ctx;
