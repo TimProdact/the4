@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import type { DropSnapshot } from "@/lib/api";
+import { DROP_THEMES, applyTheme } from "@/lib/drop-themes";
 import { computePhase } from "@/lib/drop-config";
 import { useDropStream } from "@/hooks/use-drop-stream";
 import { useNow } from "@/hooks/use-now";
@@ -17,15 +17,26 @@ interface DropAppProps {
 
 const VIP_KEY = "the4_vip";
 
+function readPrefill() {
+  if (typeof window === "undefined") return {};
+  const p = new URLSearchParams(window.location.search);
+  return {
+    name: p.get("name") || undefined,
+    phone: p.get("phone") || undefined,
+  };
+}
+
 export function DropApp({ initial }: DropAppProps) {
-  const params = useSearchParams();
   const [vip, setVip] = useState(false);
   const [dropStarted, setDropStarted] = useState(false);
+  const [prefill, setPrefill] = useState<{ name?: string; phone?: string }>({});
   const snap = useDropStream(initial);
   const now = useNow(1000);
 
   useEffect(() => {
+    applyTheme(DROP_THEMES[0]);
     setVip(sessionStorage.getItem(VIP_KEY) === "1");
+    setPrefill(readPrefill());
   }, []);
 
   useEffect(() => {
@@ -33,11 +44,6 @@ export function DropApp({ initial }: DropAppProps) {
       setDropStarted(false);
     }
   }, [snap.startsAt, now]);
-
-  const prefill = {
-    name: params.get("name") || undefined,
-    phone: params.get("phone") || undefined,
-  };
 
   if (snap.paused) {
     return <PausedScreen />;

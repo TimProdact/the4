@@ -1,10 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useState } from "react";
 import { DROP_THEMES, applyTheme, type DropTheme } from "@/lib/drop-themes";
 import { formatPrice } from "@/lib/format";
-import { GlbViewer } from "./glb-viewer";
+import { ErrorBoundary } from "./error-boundary";
+
+const GlbViewer = dynamic(() => import("./glb-viewer").then(m => m.GlbViewer), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--fg)]/15 border-t-[var(--fg)]" />
+    </div>
+  ),
+});
 
 interface ProductSliderProps {
   onThemeChange?: (theme: DropTheme) => void;
@@ -84,7 +94,9 @@ export function ProductSlider({ onThemeChange }: ProductSliderProps) {
           <div className="flex h-full">
             {DROP_THEMES.map((t, i) => (
               <div key={t.id} className="h-full min-w-0 shrink-0 grow-0 basis-full">
-                <GlbViewer theme={t} active={i === activeIndex} />
+                <ErrorBoundary>
+                  <GlbViewer theme={t} active={i === activeIndex} />
+                </ErrorBoundary>
               </div>
             ))}
           </div>

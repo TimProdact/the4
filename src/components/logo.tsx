@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { asset } from "@/lib/asset";
 
 interface LogoProps {
   variant?: "light" | "dark";
@@ -26,7 +27,7 @@ export function Logo({ variant = "dark", onLongPress }: LogoProps) {
   };
 
   const src =
-    variant === "light" ? "/the4-logo-white.png" : "/the4-logo-black.png";
+    variant === "light" ? asset("/the4-logo-white.png") : asset("/the4-logo-black.png");
 
   return (
     <div className="flex items-center justify-center py-1">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { asset } from "@/lib/asset";
 
 interface DropToolbarProps {
   variant?: "light" | "dark";
@@ -93,7 +94,7 @@ export function DropToolbar({
       <Link href="/home" aria-label="На главную" className={`${circleClass} justify-self-start`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/icons/monkey-logo.png"
+          src={asset("/icons/monkey-logo.png")}
           alt=""
           draggable={false}
           className={`h-9 w-9 select-none object-contain ${dark ? "invert" : ""}`}
