@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { DropSnapshot } from "@/lib/api";
-import { ProductHero } from "./product-hero";
+import { DROP_THEMES, type DropTheme } from "@/lib/drop-themes";
+import { ProductSlider } from "./product-slider";
 import { CheckoutSheet } from "./checkout-sheet";
 import { ScreenShell } from "./screen-shell";
 import { useOnline } from "@/hooks/use-online";
@@ -14,10 +15,17 @@ interface ActiveDropScreenProps {
 
 export function ActiveDropScreen({ snap, prefill }: ActiveDropScreenProps) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [theme, setTheme] = useState<DropTheme>(DROP_THEMES[0]);
   const online = useOnline();
 
   const stock = snap.available;
   const soldOut = snap.phase === "sold_out" || snap.stock <= 0;
+  const themedSnap = {
+    ...snap,
+    name: theme.name,
+    edition: theme.edition,
+    price: theme.price,
+  };
 
   return (
     <ScreenShell
@@ -25,16 +33,15 @@ export function ActiveDropScreen({ snap, prefill }: ActiveDropScreenProps) {
       stock={stock}
       totalStock={snap.totalStock}
       soldOut={soldOut}
+      toolbarVariant={theme.toolbarVariant}
+      shareTitle={`THE4 — ${theme.name}`}
+      shareText={`${theme.name} — ${theme.edition} on THE4`}
     >
       <section
         className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden"
         aria-label="Продукт"
       >
-        <ProductHero
-          name={snap.name}
-          edition={snap.edition}
-          price={snap.price}
-        />
+        <ProductSlider onThemeChange={setTheme} />
       </section>
 
       <section
@@ -45,7 +52,7 @@ export function ActiveDropScreen({ snap, prefill }: ActiveDropScreenProps) {
           <button
             type="button"
             onClick={() => setCheckoutOpen(true)}
-            className="w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.28em] text-[#e8e6e1] transition active:scale-[0.99] md:py-5"
+            className="w-full bg-[var(--btn)] py-4 text-sm font-semibold uppercase tracking-[0.28em] text-[var(--btn-text)] transition active:scale-[0.99] md:py-5"
           >
             Buy Now
           </button>
@@ -55,7 +62,7 @@ export function ActiveDropScreen({ snap, prefill }: ActiveDropScreenProps) {
       <CheckoutSheet
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
-        snap={snap}
+        snap={themedSnap}
         prefill={prefill}
         offline={!online}
       />

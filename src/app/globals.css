@@ -6,6 +6,9 @@
   --muted: #6b6b6b;
   --accent: #ff2d2d;
   --btn: #0a0a0a;
+  --btn-text: #e8e6e1;
+  --selection-bg: #0a0a0a;
+  --selection-fg: #e8e6e1;
 }
 
 @theme inline {
@@ -31,8 +34,14 @@ body {
 }
 
 ::selection {
-  background: #0a0a0a;
-  color: #e8e6e1;
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+.theme-screen {
+  transition:
+    background-color 0.45s ease,
+    color 0.45s ease;
 }
 
 @keyframes slide-up {

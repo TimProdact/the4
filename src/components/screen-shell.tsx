@@ -18,6 +18,8 @@ interface ScreenShellProps {
   totalStock?: number;
   soldOut?: boolean;
   toolbarVariant?: "light" | "dark";
+  shareTitle?: string;
+  shareText?: string;
 }
 
 export function ScreenShell({
@@ -28,10 +30,12 @@ export function ScreenShell({
   totalStock,
   soldOut,
   toolbarVariant = "light",
+  shareTitle,
+  shareText,
 }: ScreenShellProps) {
   return (
     <main
-      className={`relative flex h-[100dvh] flex-col overflow-hidden bg-[var(--bg)] ${
+      className={`theme-screen relative flex h-[100dvh] flex-col overflow-hidden bg-[var(--bg)] ${
         dimmed ? "grayscale" : ""
       }`}
     >
@@ -41,6 +45,8 @@ export function ScreenShell({
         stock={stock}
         totalStock={totalStock}
         soldOut={soldOut}
+        shareTitle={shareTitle}
+        shareText={shareText}
       />
       {children}
     </main>

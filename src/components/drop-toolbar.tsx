@@ -8,6 +8,8 @@ interface DropToolbarProps {
   stock?: number;
   totalStock?: number;
   soldOut?: boolean;
+  shareTitle?: string;
+  shareText?: string;
 }
 
 function ShareIcon() {
@@ -49,6 +51,8 @@ export function DropToolbar({
   stock,
   totalStock,
   soldOut = false,
+  shareTitle = "THE4",
+  shareText = "Limited drop on THE4",
 }: DropToolbarProps) {
   const [shared, setShared] = useState(false);
   const dark = variant === "dark";
@@ -61,8 +65,8 @@ export function DropToolbar({
   const handleShare = async () => {
     const url = window.location.href;
     const payload = {
-      title: "THE4 — SHIZARU OKSANA",
-      text: "SHIZARU OKSANA — 1st Edition on THE4",
+      title: shareTitle,
+      text: shareText,
       url,
     };
 
