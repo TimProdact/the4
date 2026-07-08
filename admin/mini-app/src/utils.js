@@ -16,15 +16,51 @@ export function orderStatusLabel(status) {
 export function phaseLabel(phase, paused) {
   if (paused) return 'Пауза';
   const map = {
-    active: 'Активен',
-    pre_drop: 'Pre-drop',
-    sold_out: 'Sold out',
+    active: 'Идёт продажа',
+    pre_drop: 'До старта',
+    sold_out: 'Распродано',
   };
   return map[phase] || phase;
 }
 
+export function formatDropDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function formatDropDateOnly(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+export function formatDropTimeOnly(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function needsOnboarding(snapshot) {
+  if (!snapshot) return false;
+  if (snapshot.onboardingComplete === false) return true;
+  return !String(snapshot.product?.name || '').trim();
+}
+
 export function vitrinaUrl() {
   return 'https://timprodact.github.io/the4/';
+}
+
+export function vitrinaShortUrl() {
+  return 'timprodact.github.io/the4';
 }
 
 export function pendingOrders(orders = []) {

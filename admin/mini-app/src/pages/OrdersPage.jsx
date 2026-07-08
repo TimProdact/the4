@@ -42,12 +42,12 @@ export function OrdersPage({ snapshot, push }) {
               <Cell
                 key={o.id}
                 onClick={() => push(SCREENS.ORDER_DETAIL, { orderId: o.id })}
-                subtitle={`${orderStatusLabel(o.status)} · ${o.buyer?.phone || '—'}`}
-                description={new Date(o.createdAt).toLocaleString('ru-RU')}
-                after={<>{formatPrice(o.amount)} <Icon24ChevronRight /></>}
+                subtitle={`${o.buyer?.phone || '—'} · ${formatPrice(o.amount)}`}
+                description={orderStatusLabel(o.status)}
+                after={<Icon24ChevronRight />}
                 multiline
               >
-                {o.productName} · {o.receipt}
+                🧾 {o.receipt} · {orderStatusLabel(o.status)}
               </Cell>
             ))}
             {!filtered.length && <Cell subtitle="Нет заказов">Пусто</Cell>}

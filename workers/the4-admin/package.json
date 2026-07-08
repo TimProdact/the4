@@ -1,0 +1,8 @@
+{
+  "name": "the4-admin-api-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@telegram-apps/init-data-node": "^2.0.10"
+  }
+}

@@ -39,6 +39,15 @@ yarn-error.log*
 # netlify local state
 .netlify/
 
+# bot runtime data
+/data/
+
+# mini-app build (generated on deploy)
+/admin/mini-app/node_modules
+/public/admin/mini-app-dist/
+/admin/mini-app-dist
+.the4-api-url
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

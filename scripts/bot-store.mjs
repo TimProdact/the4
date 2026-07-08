@@ -9,6 +9,19 @@ const STORE_PATH = join(ROOT, 'data', 'bot-store.json');
 const VITRINA_BASE = process.env.THE4_VITRINA_URL || 'https://timprodact.github.io/the4';
 const VIP_PASSWORD = process.env.VIP_PASSWORD || 'THE4';
 
+export const DEFAULT_BRAND = {
+  name: 'THE4',
+  logoEmoji: '🐱',
+  logoUrl: '',
+  bio: '',
+  heroBgUrl: '',
+  socials: {
+    telegram: 'https://t.me/mundesign',
+    instagram: '',
+    tiktok: '',
+  },
+};
+
 export const DEFAULT_PRODUCT = {
   id: 'cream-tube',
   name: 'SILK REPAIR',
@@ -39,6 +52,7 @@ function defaultStore() {
   const startsAt = process.env.DROP_STARTS_AT || new Date(now + 7 * 86_400_000).toISOString();
   return {
     product: { ...DEFAULT_PRODUCT },
+    brand: { ...DEFAULT_BRAND, socials: { ...DEFAULT_BRAND.socials } },
     phase: 'pre_drop',
     stock: 14,
     totalStock: 100,
@@ -83,6 +97,7 @@ function defaultStore() {
       },
     ],
     waitlist: [],
+    onboardingComplete: true,
   };
 }
 
@@ -115,7 +130,7 @@ function loadStore() {
     return fresh;
   }
   const parsed = JSON.parse(readFileSync(STORE_PATH, 'utf8'));
-  const store = { ...defaultStore(), ...parsed, product: { ...DEFAULT_PRODUCT, ...parsed.product } };
+  const store = { ...defaultStore(), ...parsed, product: { ...DEFAULT_PRODUCT, ...parsed.product }, brand: { ...DEFAULT_BRAND, ...parsed.brand, socials: { ...DEFAULT_BRAND.socials, ...parsed.brand?.socials } } };
   store.phase = computePhase(store);
   return store;
 }
@@ -144,6 +159,7 @@ function toPublicDrop(store, vipOverride = false) {
     edition: product.edition,
     images: product.images?.length ? product.images : DEFAULT_PRODUCT.images,
     product,
+    brand: store.brand || DEFAULT_BRAND,
   };
 }
 
@@ -165,6 +181,8 @@ export function getSnapshot() {
     manualPhase: store.manualPhase,
     pickupAddress: store.pickupAddress,
     product,
+    brand: store.brand || DEFAULT_BRAND,
+    onboardingComplete: store.onboardingComplete !== false,
     holds: Object.entries(store.holds).map(([id, h]) => ({ id, expiresAt: h.expiresAt })),
     orders: store.orders,
     waitlist: store.waitlist,
@@ -250,6 +268,15 @@ export function runAction(action, payload = {}) {
   const product = store.product || DEFAULT_PRODUCT;
 
   switch (action) {
+    case 'update_brand': {
+      const b = payload.brand || {};
+      store.brand = {
+        ...(store.brand || DEFAULT_BRAND),
+        ...b,
+        socials: { ...(store.brand?.socials || DEFAULT_BRAND.socials), ...(b.socials || {}) },
+      };
+      break;
+    }
     case 'update_product': {
       const p = payload.product || {};
       store.product = {
@@ -258,6 +285,32 @@ export function runAction(action, payload = {}) {
         price: Number(p.price ?? product.price),
         images: Array.isArray(p.images) ? p.images : product.images,
       };
+      break;
+    }
+    case 'launch_drop': {
+      const p = payload.product || {};
+      const modelPatch = p.mediaType === 'images'
+        ? { mediaType: 'images', images: p.images || product.images }
+        : {
+            id: p.id || product.id,
+            mediaType: '3d',
+            modelUrl: p.modelUrl || product.modelUrl,
+          };
+      store.product = {
+        ...product,
+        ...modelPatch,
+        name: String(payload.name || product.name).trim(),
+        price: Number(payload.price ?? product.price),
+        edition: payload.edition || product.edition || '1st Drop',
+      };
+      store.startsAt = String(payload.startsAt || store.startsAt);
+      const total = Number(payload.totalStock ?? payload.stock ?? store.totalStock);
+      const stock = Number(payload.stock ?? total);
+      store.totalStock = total;
+      store.stock = Math.min(stock, total);
+      store.paused = false;
+      store.manualPhase = null;
+      store.onboardingComplete = true;
       break;
     }
     case 'set_starts_at':

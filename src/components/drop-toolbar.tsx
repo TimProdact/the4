@@ -1,17 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { asset } from "@/lib/asset";
-import { useTheme } from "@/lib/theme-context";
+import type { DropBadgePhase } from "@/lib/preview";
+import { usePreview } from "@/lib/preview-context";
+import { useProfile } from "@/lib/profile-context";
+import { useT } from "@/lib/i18n";
+import { trackEvent } from "@/lib/analytics";
 import { StockPill } from "./stock-pill";
+import { CatAvatar } from "./cat-avatar";
 
 interface DropToolbarProps {
   variant?: "light" | "dark";
+  badgePhase?: DropBadgePhase;
   stock?: number;
   totalStock?: number;
-  soldOut?: boolean;
-  allHeld?: boolean;
+  badgeStartsAt?: string;
+  previewPreDrop?: boolean;
+  onBadgeLongPressStart?: () => void;
+  onBadgeLongPressEnd?: () => void;
   shareTitle?: string;
   shareText?: string;
 }
@@ -52,25 +58,31 @@ function CheckIcon() {
 
 export function DropToolbar({
   variant = "light",
+  badgePhase,
   stock,
   totalStock,
-  soldOut = false,
-  allHeld = false,
+  badgeStartsAt,
+  previewPreDrop,
+  onBadgeLongPressStart,
+  onBadgeLongPressEnd,
   shareTitle = "THE4",
-  shareText = "Limited drop on THE4",
+  shareText,
 }: DropToolbarProps) {
   const [shared, setShared] = useState(false);
-  const { theme, nextTheme } = useTheme();
+  const { cyclePreview } = usePreview();
+  const { openProfile, persona, user } = useProfile();
+  const { t } = useT();
   const dark = variant === "dark";
-  const showStock = stock !== undefined && totalStock !== undefined;
+  const resolvedShareText = shareText ?? t("toolbar.shareText");
 
   const circleClass = dark
     ? "flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[var(--fg)] transition active:scale-95"
     : "flex h-11 w-11 items-center justify-center rounded-full border border-[var(--fg)]/10 bg-[var(--bg)] text-[var(--fg)] transition active:scale-95";
 
   const handleShare = async () => {
+    trackEvent("share_click");
     const url = window.location.href;
-    const payload = { title: shareTitle, text: shareText, url };
+    const payload = { title: shareTitle, text: resolvedShareText, url };
 
     if (navigator.share) {
       try {
@@ -86,42 +98,44 @@ export function DropToolbar({
       setShared(true);
       window.setTimeout(() => setShared(false), 1800);
     } catch {
-      window.prompt("Copy link:", url);
+      window.prompt(t("common.copyLink"), url);
     }
   };
 
   return (
     <header className="grid shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center gap-3 px-5 py-4 md:px-6 md:py-5">
-      <Link href="/home" aria-label="На главную" className={`${circleClass} justify-self-start`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={asset("/icons/monkey-logo.png")}
-          alt=""
-          draggable={false}
-          className={`h-9 w-9 select-none object-contain ${dark ? "invert" : ""}`}
-        />
-      </Link>
+      <button
+        type="button"
+        onClick={openProfile}
+        aria-label={t("toolbar.profile")}
+        className={`${circleClass} justify-self-start overflow-hidden p-0`}
+      >
+        <CatAvatar avatarId={persona.avatarId} size="sm" unknown={!user} />
+      </button>
 
-      {showStock ? (
-        <div className="flex justify-center">
+      <div className="flex justify-center">
+        {badgePhase ? (
           <StockPill
+            phase={badgePhase}
             stock={stock}
             totalStock={totalStock}
-            soldOut={soldOut}
-            allHeld={allHeld}
-            lowStock={!soldOut && !allHeld && stock <= 3}
-            onCycleTheme={nextTheme}
-            themeLabel={theme.name}
+            startsAt={badgeStartsAt}
+            previewPreDrop={previewPreDrop}
+            onCyclePreview={cyclePreview}
+            onLongPressStart={onBadgeLongPressStart}
+            onLongPressEnd={onBadgeLongPressEnd}
           />
-        </div>
-      ) : (
-        <span aria-hidden />
-      )}
+        ) : (
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+            The4
+          </span>
+        )}
+      </div>
 
       <button
         type="button"
         onClick={handleShare}
-        aria-label={shared ? "Ссылка скопирована" : "Поделиться"}
+        aria-label={shared ? t("toolbar.linkCopied") : t("toolbar.share")}
         className={`${circleClass} justify-self-end`}
       >
         {shared ? <CheckIcon /> : <ShareIcon />}

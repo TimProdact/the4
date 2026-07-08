@@ -1,0 +1,10 @@
+name = "the4-admin-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "THE4_STORE"
+id = "placeholder"
+
+[vars]
+DROP_STARTS_AT = "2020-01-01T00:00:00.000Z"

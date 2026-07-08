@@ -1,47 +1,69 @@
+"use client";
+
+import type { DropBadgePhase } from "@/lib/preview";
+import { useT } from "@/lib/i18n";
+import { ThemeCountdown } from "./theme-countdown";
+
 interface StockPillProps {
-  stock: number;
-  totalStock: number;
-  soldOut?: boolean;
-  lowStock?: boolean;
-  allHeld?: boolean;
-  onCycleTheme?: () => void;
-  themeLabel?: string;
+  phase: DropBadgePhase;
+  stock?: number;
+  totalStock?: number;
+  startsAt?: string;
+  previewPreDrop?: boolean;
+  onCyclePreview?: () => void;
+  onLongPressStart?: () => void;
+  onLongPressEnd?: () => void;
 }
 
 const pillClass =
-  "inline-flex items-center rounded-full px-3 py-1 text-[0.68rem] transition active:scale-95";
+  "inline-flex items-center rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] transition active:scale-95";
 
 export function StockPill({
-  stock,
-  totalStock,
-  soldOut,
-  lowStock,
-  allHeld,
-  onCycleTheme,
-  themeLabel,
+  phase,
+  stock = 0,
+  totalStock = 0,
+  startsAt,
+  previewPreDrop = false,
+  onCyclePreview,
+  onLongPressStart,
+  onLongPressEnd,
 }: StockPillProps) {
-  if (soldOut) {
+  const { t } = useT();
+
+  if (phase === "pre_drop") {
     return (
       <button
         type="button"
-        onClick={onCycleTheme}
-        aria-label={themeLabel ? `Тема: ${themeLabel}. Нажми для смены` : "Сменить тему"}
-        className={`${pillClass} bg-[var(--stock-pill-bg)] font-semibold uppercase tracking-[0.14em] text-[var(--stock-sold-text)]`}
+        onClick={onCyclePreview}
+        aria-label={t("stock.preDropAria")}
+        className={`${pillClass} bg-[var(--stock-pill-bg)] text-[var(--stock-pill-text)]`}
+        onPointerDown={onLongPressStart}
+        onPointerUp={onLongPressEnd}
+        onPointerLeave={onLongPressEnd}
+        onContextMenu={e => onLongPressStart && e.preventDefault()}
       >
-        Sold Out
+        {startsAt ? (
+          <ThemeCountdown
+            startsAt={startsAt}
+            previewMode={previewPreDrop}
+            variant="badge"
+          />
+        ) : (
+          t("stock.preDrop")
+        )}
       </button>
     );
   }
 
-  if (allHeld) {
+  if (phase === "sold_out") {
     return (
       <button
         type="button"
-        onClick={onCycleTheme}
-        aria-label={themeLabel ? `Тема: ${themeLabel}. Нажми для смены` : "Сменить тему"}
-        className={`${pillClass} bg-[var(--state-error-bg)] font-semibold uppercase tracking-[0.12em] text-[var(--state-error)]`}
+        onClick={onCyclePreview}
+        aria-label={t("stock.soldOutAria")}
+        className={`${pillClass} bg-[var(--stock-pill-bg)] text-[var(--stock-sold-text)]`}
       >
-        Все в резерве
+        {t("stock.soldOut")}
       </button>
     );
   }
@@ -49,17 +71,13 @@ export function StockPill({
   return (
     <button
       type="button"
-      onClick={onCycleTheme}
-      aria-label={
-        themeLabel
-          ? `Осталось ${stock} из ${totalStock}. Тема: ${themeLabel}. Нажми для смены`
-          : `Осталось ${stock} из ${totalStock}. Нажми для смены темы`
-      }
-      className={`${pillClass} bg-[var(--stock-pill-bg)] font-medium tracking-wide text-[var(--stock-pill-text)] ${
-        lowStock ? "ring-1 ring-[var(--accent)]/30" : ""
+      onClick={onCyclePreview}
+      aria-label={t("stock.remainingAria", { stock, total: totalStock })}
+      className={`${pillClass} bg-[var(--stock-pill-bg)] text-[var(--stock-pill-text)] ${
+        stock > 0 && stock <= 3 ? "ring-1 ring-[var(--accent)]/30" : ""
       }`}
     >
-      Осталось: {stock} / {totalStock}
+      {t("stock.remaining", { stock, total: totalStock })}
     </button>
   );
 }

@@ -1,12 +1,39 @@
 import { useState } from 'react';
-import { List, Section, Cell, Button } from '@telegram-apps/telegram-ui';
+import { Button } from '@telegram-apps/telegram-ui';
 import { PageHeader, SubpageLayout } from '../components/PageLayout.jsx';
 import { InsetSection } from '../components/InsetSection.jsx';
-import { formatPrice, phaseLabel } from '../utils.js';
+import { BottomSheet } from '../components/BottomSheet.jsx';
+import { ValueRow, SwitchRow } from '../components/ValueRow.jsx';
+import { formatDropDateOnly, formatDropTimeOnly, phaseLabel, vitrinaUrl } from '../utils.js';
 import { haptic, runActionSafe } from '../api.js';
 
+function toDateValue(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function toTimeValue(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function mergeDateTime(iso, datePart, timePart) {
+  const base = iso ? new Date(iso) : new Date();
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [hh, mm] = timePart.split(':').map(Number);
+  base.setFullYear(y, m - 1, d);
+  base.setHours(hh, mm, 0, 0);
+  return base.toISOString();
+}
+
 export function DropPage({ snapshot, onSnapshotChange }) {
-  const [stockInput, setStockInput] = useState(String(snapshot.stock));
+  const [sheet, setSheet] = useState(null);
+  const [dateDraft, setDateDraft] = useState('');
+  const [timeDraft, setTimeDraft] = useState('');
   const [busy, setBusy] = useState(false);
 
   const act = async (adminAction, payload = {}) => {
@@ -15,134 +42,125 @@ export function DropPage({ snapshot, onSnapshotChange }) {
     try {
       const next = await runActionSafe(adminAction, payload);
       onSnapshotChange(next);
-      if (adminAction === 'set_stock') setStockInput(String(next.stock));
     } finally {
       setBusy(false);
     }
   };
 
+  const openDate = () => {
+    setDateDraft(toDateValue(snapshot.startsAt));
+    setSheet('date');
+  };
+
+  const openTime = () => {
+    setTimeDraft(toTimeValue(snapshot.startsAt));
+    setSheet('time');
+  };
+
+  const saveDate = async () => {
+    const time = toTimeValue(snapshot.startsAt) || '20:00';
+    await act('set_starts_at', {
+      startsAt: mergeDateTime(snapshot.startsAt, dateDraft, time),
+    });
+    setSheet(null);
+  };
+
+  const saveTime = async () => {
+    const date = toDateValue(snapshot.startsAt) || toDateValue(new Date().toISOString());
+    await act('set_starts_at', {
+      startsAt: mergeDateTime(snapshot.startsAt, date, timeDraft),
+    });
+    setSheet(null);
+  };
+
+  const bumpStock = (delta) => {
+    const next = Math.max(0, Math.min(snapshot.totalStock, snapshot.stock + delta));
+    act('set_stock', { stock: next });
+  };
+
+  const openVitrina = () => {
+    haptic('light');
+    const tg = window.Telegram?.WebApp;
+    const url = vitrinaUrl();
+    if (tg?.openLink) tg.openLink(url);
+    else window.open(url, '_blank', 'noopener');
+  };
+
   return (
     <SubpageLayout>
-      <PageHeader
-        title="Дроп"
-        subtitle={phaseLabel(snapshot.phase, snapshot.paused)}
-      />
+      <PageHeader title="Дроп" subtitle="Когда и сколько продавать" />
       <InsetSection>
-        <List>
-          <Section header="СТОК">
-            <Cell
-              subtitle="Доступно сейчас"
-              after={`${snapshot.available} / ${snapshot.stock}`}
-            >
-              {formatPrice(320_000)} · SILK REPAIR
-            </Cell>
-            <Cell>
-              <div className="fm-drop-stock-row">
-                <input
-                  type="number"
-                  min={0}
-                  max={snapshot.totalStock}
-                  value={stockInput}
-                  onChange={e => setStockInput(e.target.value)}
-                  className="fm-drop-input"
-                />
-                <Button
-                  mode="filled"
-                  size="s"
-                  disabled={busy}
-                  onClick={() => act('set_stock', { stock: Number(stockInput) })}
-                >
-                  Set
-                </Button>
-              </div>
-            </Cell>
-          </Section>
+        <div className="fm-inset-card fm-value-group">
+          <ValueRow
+            label="Статус"
+            value={phaseLabel(snapshot.phase, snapshot.paused)}
+            muted
+          />
+          <ValueRow
+            label="Дата старта"
+            value={formatDropDateOnly(snapshot.startsAt)}
+            onClick={openDate}
+          />
+          <ValueRow
+            label="Время старта"
+            value={formatDropTimeOnly(snapshot.startsAt)}
+            onClick={openTime}
+          />
+          <div className="fm-value-row fm-value-row--static fm-value-row--stepper">
+            <span className="fm-value-row-label">В наличии</span>
+            <div className="fm-stepper">
+              <button type="button" className="fm-stepper-btn" disabled={busy || snapshot.stock <= 0} onClick={() => bumpStock(-1)}>−</button>
+              <span className="fm-stepper-value">{snapshot.stock} шт</span>
+              <button type="button" className="fm-stepper-btn" disabled={busy || snapshot.stock >= snapshot.totalStock} onClick={() => bumpStock(1)}>+</button>
+            </div>
+          </div>
+          <SwitchRow
+            label="Пауза"
+            checked={Boolean(snapshot.paused)}
+            onChange={(paused) => act('set_paused', { paused })}
+            last
+          />
+        </div>
 
-          <Section header="УПРАВЛЕНИЕ">
-            <Cell>
-              <Button
-                mode="filled"
-                size="l"
-                stretched
-                disabled={busy}
-                onClick={() => act('set_paused', { paused: !snapshot.paused })}
-              >
-                {snapshot.paused ? '▶️ Resume' : '⏸ Пауза'}
-              </Button>
-            </Cell>
-            <Cell>
-              <Button
-                mode="outline"
-                size="l"
-                stretched
-                disabled={busy}
-                onClick={() => act('clear_holds')}
-              >
-                Сбросить holds ({snapshot.holds.length})
-              </Button>
-            </Cell>
-            <Cell>
-              <Button
-                mode="outline"
-                size="l"
-                stretched
-                disabled={busy}
-                onClick={() => act('set_starts_at', {
-                  startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-                })}
-              >
-                Pre-drop +1ч
-              </Button>
-            </Cell>
-            <Cell>
-              <Button
-                mode="outline"
-                size="l"
-                stretched
-                disabled={busy}
-                onClick={() => act('set_starts_at', { startsAt: '2020-01-01T00:00:00.000Z' })}
-              >
-                Active now
-              </Button>
-            </Cell>
-            <Cell>
-              <Button
-                mode="plain"
-                size="l"
-                stretched
-                disabled={busy}
-                onClick={() => {
-                  const tg = window.Telegram?.WebApp;
-                  const run = () => act('reset_demo');
-                  if (tg?.showPopup) {
-                    tg.showPopup({
-                      title: 'Reset demo',
-                      message: 'Сбросить все демо-данные?',
-                      buttons: [{ type: 'destructive', text: 'Сбросить', id: 'yes' }, { type: 'cancel' }],
-                    }, id => { if (id === 'yes') run(); });
-                  } else if (confirm('Сбросить демо?')) run();
-                }}
-                style={{ color: 'var(--tg-theme-destructive-text-color, #ff3b30)' }}
-              >
-                Reset demo
-              </Button>
-            </Cell>
-          </Section>
-
-          {snapshot.holds.length > 0 && (
-            <Section header="HOLDS">
-              {snapshot.holds.map(h => (
-                <Cell
-                  key={h.id}
-                  subtitle={new Date(h.expiresAt).toLocaleTimeString('ru-RU')}
-                >
-                  {h.id.slice(0, 8)}…
-                </Cell>
-              ))}
-            </Section>
-          )}
-        </List>
+        <div className="fm-page-cta">
+          <Button mode="filled" size="l" stretched onClick={openVitrina}>
+            Посмотреть витрину
+          </Button>
+        </div>
       </InsetSection>
+
+      <BottomSheet open={sheet === 'date'} title="Дата старта" onClose={() => setSheet(null)}>
+        <div className="fm-field-sheet">
+          <input
+            type="date"
+            className="fm-field-sheet-input fm-field-sheet-input--picker"
+            value={dateDraft}
+            onChange={(e) => setDateDraft(e.target.value)}
+          />
+          <Button mode="filled" size="l" stretched disabled={busy || !dateDraft} onClick={saveDate}>
+            Готово
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={sheet === 'time'} title="Время старта" onClose={() => setSheet(null)}>
+        <div className="fm-field-sheet">
+          <input
+            type="time"
+            className="fm-field-sheet-input fm-field-sheet-input--picker"
+            value={timeDraft}
+            onChange={(e) => setTimeDraft(e.target.value)}
+          />
+          <div className="fm-sheet-link-row">
+            <button type="button" className="fm-sheet-link" onClick={openDate}>
+              Изменить дату
+            </button>
+          </div>
+          <Button mode="filled" size="l" stretched disabled={busy || !timeDraft} onClick={saveTime}>
+            Готово
+          </Button>
+        </div>
+      </BottomSheet>
     </SubpageLayout>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
 const geist = Geist({
@@ -9,23 +10,23 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://timprodact.github.io/the4"),
-  title: "The4 — Limited Drop",
-  description: "Limited drop. 3D gallery.",
+  title: "The4 — Cosmetic Drop",
+  description: "Limited cosmetic drops in 3D.",
   robots: "noindex",
   openGraph: {
-    title: "THE4 — Limited Drop",
-    description: "Limited drop · 3D gallery",
+    title: "THE4 — Cosmetic Drop",
+    description: "Limited cosmetic drops · 3D gallery",
     url: "https://timprodact.github.io/the4",
     siteName: "THE4",
-    images: [{ url: "/og-drop.png", width: 1200, height: 630, alt: "THE4" }],
+    images: [{ url: "/icons/cat.svg", width: 512, height: 512, alt: "THE4" }],
     locale: "ru_RU",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "THE4 — Limited Drop",
-    description: "Limited drop · 3D gallery",
-    images: ["/og-drop.png"],
+    title: "THE4 — Cosmetic Drop",
+    description: "Limited cosmetic drops · 3D gallery",
+    images: ["/icons/cat.svg"],
   },
 };
 
@@ -44,7 +45,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className={`${geist.variable} h-full`}>
-      <body className="h-full antialiased">{children}</body>
+      <body className="h-full antialiased">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

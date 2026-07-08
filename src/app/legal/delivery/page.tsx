@@ -1,17 +1,16 @@
-import Link from "next/link";
+"use client";
+
+import { LegalLayout } from "@/components/legal-layout";
+import { useT } from "@/lib/i18n";
 
 export default function DeliveryPage() {
+  const { t } = useT();
+
   return (
-    <main className="min-h-[100dvh] bg-[var(--bg)] px-6 py-10">
-      <Link href="/home" className="text-xs uppercase tracking-widest underline">
-        ← Archive
-      </Link>
-      <h1 className="mt-8 text-2xl font-semibold">Доставка</h1>
-      <div className="mt-6 max-w-lg space-y-4 text-sm text-[var(--muted)]">
-        <p>Курьерская доставка по Ташкенту — 2–5 рабочих дней после подтверждения оплаты.</p>
-        <p>Самовывоз: Magic City Event Hall, Ташкент.</p>
-        <p>Международная доставка обсуждается индивидуально после заказа.</p>
-      </div>
-    </main>
+    <LegalLayout title={t("legal.delivery.title")}>
+      <p>{t("legal.delivery.p1")}</p>
+      <p>{t("legal.delivery.p2")}</p>
+      <p>{t("legal.delivery.p3")}</p>
+    </LegalLayout>
   );
 }

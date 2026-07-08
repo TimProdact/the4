@@ -6,7 +6,9 @@ import { useCallback, useEffect, useState } from "react";
 import { DROP_THEMES, type DropTheme } from "@/lib/drop-themes";
 import { useTheme } from "@/lib/theme-context";
 import { formatPrice } from "@/lib/format";
+import { getThemeTagline, useT } from "@/lib/i18n";
 import { ErrorBoundary } from "./error-boundary";
+import { ThemeModelPlaceholder } from "./theme-model-placeholder";
 
 const GlbViewer = dynamic(() => import("./glb-viewer").then(m => m.GlbViewer), {
   ssr: false,
@@ -21,22 +23,9 @@ interface ProductSliderProps {
   onThemeChange?: (theme: DropTheme) => void;
 }
 
-function Chevron({ dir }: { dir: "left" | "right" }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d={dir === "left" ? "M14 6l-6 6 6 6" : "M10 6l6 6-6 6"}
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function ProductSlider({ onThemeChange }: ProductSliderProps) {
   const { themeIndex, setThemeIndex } = useTheme();
+  const { locale } = useT();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center", duration: 28 });
   const [activeIndex, setActiveIndex] = useState(themeIndex);
 
@@ -67,56 +56,24 @@ export function ProductSlider({ onThemeChange }: ProductSliderProps) {
     };
   }, [emblaApi, onSelect]);
 
-  const scrollPrev = () => emblaApi?.scrollPrev();
-  const scrollNext = () => emblaApi?.scrollNext();
   const theme = DROP_THEMES[activeIndex];
 
   return (
     <div className="flex w-full max-w-xl flex-col items-center px-2">
       <div className="relative h-[min(52dvh,26rem)] w-full shrink-0 sm:h-[min(56dvh,28rem)]">
-        <button
-          type="button"
-          onClick={scrollPrev}
-          aria-label="Предыдущий"
-          className="absolute left-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--fg)]/10 bg-[var(--bg)]/80 text-[var(--fg)] backdrop-blur-sm transition active:scale-95"
-        >
-          <Chevron dir="left" />
-        </button>
-
-        <button
-          type="button"
-          onClick={scrollNext}
-          aria-label="Следующий"
-          className="absolute right-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--fg)]/10 bg-[var(--bg)]/80 text-[var(--fg)] backdrop-blur-sm transition active:scale-95"
-        >
-          <Chevron dir="right" />
-        </button>
-
-        <div className="h-full overflow-hidden px-10" ref={emblaRef}>
+        <div className="h-full overflow-hidden" ref={emblaRef}>
           <div className="flex h-full">
             {DROP_THEMES.map((t, i) => (
               <div key={t.id} className="h-full min-w-0 shrink-0 grow-0 basis-full">
-                <ErrorBoundary>
+                <ErrorBoundary
+                  fallback={<ThemeModelPlaceholder theme={t} />}
+                >
                   <GlbViewer theme={t} active={i === activeIndex} />
                 </ErrorBoundary>
               </div>
             ))}
           </div>
         </div>
-      </div>
-
-      <div className="mt-3 flex gap-1.5">
-        {DROP_THEMES.map((t, i) => (
-          <button
-            key={t.id}
-            type="button"
-            aria-label={t.name}
-            onClick={() => emblaApi?.scrollTo(i)}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === activeIndex ? "w-6 bg-[var(--accent)]" : "w-1.5 bg-[var(--fg)]/20"
-            }`}
-          />
-        ))}
       </div>
 
       <p className="mt-4 shrink-0 text-center text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[var(--muted)] transition-colors duration-300">
@@ -126,11 +83,11 @@ export function ProductSlider({ onThemeChange }: ProductSliderProps) {
       </p>
 
       <p className="mt-1.5 shrink-0 text-center text-base font-medium tracking-wide text-[var(--fg)] transition-colors duration-300">
-        {formatPrice(theme.price)}
+        {formatPrice(theme.price, "UZS", locale)}
       </p>
 
       <p className="mt-1 shrink-0 text-center text-[0.65rem] uppercase tracking-[0.18em] text-[var(--accent)] transition-colors duration-300">
-        {theme.tagline}
+        {getThemeTagline(theme.id, locale, theme.tagline)}
       </p>
     </div>
   );

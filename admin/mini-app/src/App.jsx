@@ -5,10 +5,17 @@ import { useTelegramApp } from './hooks/useTelegramApp.js';
 import { useNavStack } from './hooks/useNavStack.js';
 import { waitForInitData, hasTelegramContext } from './telegram-init.js';
 import { SCREENS } from './navigation/screens.js';
+import { needsOnboarding } from './utils.js';
 import { HubPage } from './pages/HubPage.jsx';
+import { WizardPage } from './pages/WizardPage.jsx';
 import { ProductPage } from './pages/ProductPage.jsx';
+import { ProductMediaPage } from './pages/ProductMediaPage.jsx';
+import { DropPage } from './pages/DropPage.jsx';
 import { OrdersPage } from './pages/OrdersPage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
+import { WaitlistPage } from './pages/WaitlistPage.jsx';
+import { BrandEditPage } from './pages/BrandEditPage.jsx';
+import { QrPage } from './pages/QrPage.jsx';
 import { HubSkeleton } from './components/HubSkeleton.jsx';
 
 export default function App() {
@@ -39,7 +46,7 @@ export default function App() {
       setLoadingHint('Подключаемся к серверу…');
       const data = await bootstrap();
       setSnapshot(data.snapshot);
-      reset(SCREENS.HUB);
+      reset(needsOnboarding(data.snapshot) ? SCREENS.WIZARD : SCREENS.HUB);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -53,6 +60,10 @@ export default function App() {
 
   useEffect(() => {
     if (!tg?.BackButton) return;
+    if (current.id === SCREENS.WIZARD) {
+      tg.BackButton.hide();
+      return;
+    }
     if (depth > 1) {
       tg.BackButton.show();
       const handler = () => {
@@ -63,7 +74,7 @@ export default function App() {
       return () => { tg.BackButton.offClick(handler); tg.BackButton.hide(); };
     }
     tg.BackButton.hide();
-  }, [depth, tg, pop]);
+  }, [depth, tg, pop, current.id]);
 
   const findOrder = (id) => snapshot?.orders?.find(o => o.id === Number(id));
 
@@ -73,8 +84,26 @@ export default function App() {
     switch (id) {
       case SCREENS.HUB:
         return <HubPage snapshot={snapshot} push={push} />;
+      case SCREENS.WIZARD:
+        return (
+          <WizardPage
+            snapshot={snapshot}
+            onSnapshotChange={setSnapshot}
+            onComplete={() => reset(SCREENS.HUB)}
+          />
+        );
       case SCREENS.PRODUCT:
-        return <ProductPage snapshot={snapshot} onSnapshotChange={setSnapshot} />;
+        return <ProductPage snapshot={snapshot} onSnapshotChange={setSnapshot} push={push} />;
+      case SCREENS.PRODUCT_MEDIA:
+        return (
+          <ProductMediaPage
+            snapshot={snapshot}
+            onSnapshotChange={setSnapshot}
+            onDone={pop}
+          />
+        );
+      case SCREENS.DROP:
+        return <DropPage snapshot={snapshot} onSnapshotChange={setSnapshot} />;
       case SCREENS.ORDERS:
         return <OrdersPage snapshot={snapshot} push={push} />;
       case SCREENS.ORDER_DETAIL:
@@ -84,6 +113,18 @@ export default function App() {
             onSnapshotChange={setSnapshot}
           />
         );
+      case SCREENS.WAITLIST:
+        return <WaitlistPage snapshot={snapshot} />;
+      case SCREENS.STORE_EDIT:
+        return (
+          <BrandEditPage
+            snapshot={snapshot}
+            onSnapshotChange={setSnapshot}
+            onDone={pop}
+          />
+        );
+      case SCREENS.STORE_QR:
+        return <QrPage snapshot={snapshot} onDone={pop} />;
       default:
         return <HubPage snapshot={snapshot} push={push} />;
     }
@@ -107,9 +148,12 @@ export default function App() {
     );
   }
 
+  const isWizard = current.id === SCREENS.WIZARD;
+  const isQr = current.id === SCREENS.STORE_QR;
+
   return (
     <AppRoot appearance={appearance} platform={platform}>
-      <div className={`fm-twa fm-scroll fm-scroll--hub${depth > 1 ? ' fm-subpage' : ''}`}>
+      <div className={`fm-twa fm-scroll fm-scroll--hub${depth > 1 && !isQr ? ' fm-subpage' : ''}${isWizard ? ' fm-scroll--wizard' : ''}`}>
         {renderScreen()}
       </div>
     </AppRoot>

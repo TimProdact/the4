@@ -1,9 +1,10 @@
 [build]
-  command = "npm install && npm run build"
-  publish = ".next"
+  command = "echo 'API-only site'"
+  publish = "public"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+[functions]
+  node_bundler = "esbuild"

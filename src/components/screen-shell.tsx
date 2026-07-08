@@ -1,11 +1,14 @@
 "use client";
 
 import { DropToolbar } from "./drop-toolbar";
+import type { DropBadgePhase } from "@/lib/preview";
+import { useT } from "@/lib/i18n";
 
 export function OfflineBanner() {
+  const { t } = useT();
   return (
     <div className="bg-[var(--state-error)] px-4 py-2 text-center text-xs font-semibold tracking-wide text-[var(--btn-text)]">
-      Нет сети — проверьте подключение
+      {t("offline.banner")}
     </div>
   );
 }
@@ -14,10 +17,13 @@ interface ScreenShellProps {
   children: React.ReactNode;
   offline?: boolean;
   dimmed?: boolean;
+  badgePhase?: DropBadgePhase;
   stock?: number;
   totalStock?: number;
-  soldOut?: boolean;
-  allHeld?: boolean;
+  badgeStartsAt?: string;
+  previewPreDrop?: boolean;
+  onBadgeLongPressStart?: () => void;
+  onBadgeLongPressEnd?: () => void;
   toolbarVariant?: "light" | "dark";
   shareTitle?: string;
   shareText?: string;
@@ -27,10 +33,13 @@ export function ScreenShell({
   children,
   offline,
   dimmed,
+  badgePhase,
   stock,
   totalStock,
-  soldOut,
-  allHeld,
+  badgeStartsAt,
+  previewPreDrop,
+  onBadgeLongPressStart,
+  onBadgeLongPressEnd,
   toolbarVariant = "light",
   shareTitle,
   shareText,
@@ -44,10 +53,13 @@ export function ScreenShell({
       {offline && <OfflineBanner />}
       <DropToolbar
         variant={toolbarVariant}
+        badgePhase={badgePhase}
         stock={stock}
         totalStock={totalStock}
-        soldOut={soldOut}
-        allHeld={allHeld}
+        badgeStartsAt={badgeStartsAt}
+        previewPreDrop={previewPreDrop}
+        onBadgeLongPressStart={onBadgeLongPressStart}
+        onBadgeLongPressEnd={onBadgeLongPressEnd}
         shareTitle={shareTitle}
         shareText={shareText}
       />
