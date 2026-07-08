@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: the4-admin-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    repo: https://github.com/TimProdact/the4
+    branch: main
+    buildCommand: npm install --omit=dev
+    startCommand: node scripts/admin-api-server.mjs
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: TELEGRAM_ADMIN_IDS
+        value: "1696518783"
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
