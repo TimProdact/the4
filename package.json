@@ -14,7 +14,7 @@
     "api:server": "node scripts/admin-api-server.mjs",
     "api:tunnel": "node scripts/start-admin-tunnel.mjs",
     "deploy": "bash scripts/deploy-gh-pages.sh",
-    "deploy:api": "node scripts/deploy-render.mjs",
+    "deploy:api": "node scripts/deploy-render.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^8.2.0",
