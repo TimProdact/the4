@@ -203,6 +203,71 @@ html, body, #root {
   padding: 12px var(--fm-space-page) 4px;
 }
 
+.fm-hub-actions--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.fm-hub-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #8b949e);
+}
+
+.fm-hub-status-pill {
+  color: var(--tg-theme-link-color, #007aff);
+  font-weight: 600;
+}
+
+.fm-hub-metric-line {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #8b949e);
+}
+
+.fm-field {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--tg-theme-text-color, #fff);
+  font: inherit;
+  padding: 4px 0;
+  outline: none;
+}
+
+.fm-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fm-waitlist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 12px;
+}
+
+.fm-waitlist-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--tg-theme-hint-color) 20%, transparent);
+  font-size: 15px;
+}
+
+.fm-waitlist-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--tg-theme-link-color, #007aff);
+  font-size: 15px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
 .fm-hub-action {
   appearance: none;
   border: 0;

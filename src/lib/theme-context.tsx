@@ -13,8 +13,10 @@ import {
   DROP_THEMES,
   applyTheme,
   getThemeById,
+  mergeLiveProduct,
   type DropTheme,
 } from "@/lib/drop-themes";
+import type { LiveProduct } from "@/lib/types";
 
 interface ThemeContextValue {
   theme: DropTheme;
@@ -35,15 +37,20 @@ function indexOfTheme(id: string) {
 export function ThemeProvider({
   children,
   initialThemeId,
+  liveProduct,
 }: {
   children: ReactNode;
   initialThemeId?: string;
+  liveProduct?: LiveProduct;
 }) {
   const [themeIndex, setThemeIndex] = useState(() =>
     initialThemeId ? indexOfTheme(initialThemeId) : 0,
   );
 
-  const theme = DROP_THEMES[themeIndex];
+  const theme = useMemo(
+    () => mergeLiveProduct(DROP_THEMES[themeIndex], liveProduct),
+    [themeIndex, liveProduct],
+  );
 
   useEffect(() => {
     applyTheme(theme);

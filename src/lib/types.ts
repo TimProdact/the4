@@ -16,12 +16,38 @@ export interface Order {
   createdAt: string;
   buyer: OrderBuyer;
   amount: number;
+  productName?: string;
+  edition?: string;
+  paymentMethod?: "paylov" | "apple" | "google";
 }
 
 export interface WaitlistEntry {
   id: string;
   contact: string;
   createdAt: number;
+}
+
+export interface LiveProduct {
+  id: string;
+  name: string;
+  edition: string;
+  tagline?: string;
+  price: number;
+  currency?: string;
+  mediaType?: '3d' | 'images';
+  modelUrl?: string;
+  images?: string[];
+  colors?: {
+    bg: string;
+    fg: string;
+    muted: string;
+    accent: string;
+    btn: string;
+    btnText: string;
+  };
+  toolbarVariant?: 'light' | 'dark';
+  modelScale?: number;
+  cameraZ?: number;
 }
 
 export interface DropSnapshot {
@@ -36,13 +62,13 @@ export interface DropSnapshot {
   edition: string;
   images: readonly string[];
   paused: boolean;
+  product?: LiveProduct;
 }
 
 export interface CheckoutResult {
   ok: boolean;
   orderId: number;
   receipt: string;
-  taneeshAchievement: string;
   status: OrderStatus;
 }
 

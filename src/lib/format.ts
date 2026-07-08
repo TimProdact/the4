@@ -1,5 +1,16 @@
-export function formatPrice(n: number, currency = "UZS") {
-  return `${n.toLocaleString("ru-RU")} ${currency}`;
+import type { Locale } from "./i18n/types";
+import { localeToBcp47 } from "./i18n/messages";
+
+export function formatPrice(n: number, currency = "UZS", locale: Locale = "ru") {
+  return `${n.toLocaleString(localeToBcp47(locale))} ${currency}`;
+}
+
+export function formatDate(value: string | number | Date, locale: Locale = "ru") {
+  return new Date(value).toLocaleDateString(localeToBcp47(locale));
+}
+
+export function formatDateTime(value: string | number | Date, locale: Locale = "ru") {
+  return new Date(value).toLocaleString(localeToBcp47(locale));
 }
 
 /** +998 XX XXX XX XX */

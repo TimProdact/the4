@@ -1,4 +1,5 @@
 import { DROP_CONFIG, refreshPhase as applyPhase } from "./drop-config";
+import { assertThemePurchasable, reserveThemeStock } from "./theme-drop-status";
 import type {
   AdminSnapshot,
   CheckoutResult,
@@ -13,7 +14,7 @@ interface InternalStore {
   stock: number;
   totalStock: number;
   startsAt: string;
-  holds: Record<string, { expiresAt: number }>;
+  holds: Record<string, { expiresAt: number; themeId?: string }>;
   lastOrderId: number;
   paused: boolean;
   orders: Order[];
@@ -21,8 +22,39 @@ interface InternalStore {
 }
 
 const STORAGE_KEY = "the4_store_v1";
+const ADMIN_TOKENS_KEY = "the4_admin_tokens_v1";
 const listeners = new Set<(snap: DropSnapshot) => void>();
 const adminTokens = new Set<string>();
+
+function loadAdminTokens(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(ADMIN_TOKENS_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function persistAdminToken(token: string) {
+  const tokens = loadAdminTokens();
+  tokens.add(token);
+  adminTokens.add(token);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(ADMIN_TOKENS_KEY, JSON.stringify([...tokens]));
+  }
+}
+
+function hydrateAdminTokens() {
+  for (const token of loadAdminTokens()) {
+    adminTokens.add(token);
+  }
+}
+
+if (typeof window !== "undefined") {
+  hydrateAdminTokens();
+}
 
 function uuid() {
   return crypto.randomUUID();
@@ -42,12 +74,77 @@ function defaultStore(): InternalStore {
   };
 }
 
+function ensureDemoSeed(store: InternalStore) {
+  if (store.orders.length > 0) return;
+  const now = Date.now();
+  store.orders = [
+    {
+      id: 1001,
+      receipt: "THE4-1001",
+      status: "paid",
+      createdAt: new Date(now - 86_400_000).toISOString(),
+      buyer: {
+        name: "Демо Покупатель",
+        phone: "+998 90 123 45 67",
+        deliveryType: "delivery",
+        address: "Ташкент, ул. Навои, 12",
+      },
+      amount: DROP_CONFIG.price,
+      productName: DROP_CONFIG.name,
+      edition: DROP_CONFIG.edition,
+      paymentMethod: "paylov",
+    },
+    {
+      id: 1002,
+      receipt: "THE4-1002",
+      status: "pending",
+      createdAt: new Date(now - 3_600_000).toISOString(),
+      buyer: {
+        name: "Apple Pay User",
+        phone: "+998 91 000 00 01",
+        deliveryType: "pickup",
+        address: DROP_CONFIG.pickupAddress,
+      },
+      amount: 420_000,
+      productName: "PULSE TINT",
+      edition: "Lip Oil",
+      paymentMethod: "apple",
+    },
+    {
+      id: 1003,
+      receipt: "THE4-1003",
+      status: "failed",
+      createdAt: new Date(now - 7_200_000).toISOString(),
+      buyer: {
+        name: "Google Pay User",
+        phone: "+998 93 111 22 33",
+        deliveryType: "delivery",
+        address: "Ташкент, Мирабад",
+      },
+      amount: 666_000,
+      productName: "MIDNIGHT PEEL",
+      edition: "Exfoliating Mask",
+      paymentMethod: "google",
+    },
+  ];
+  store.lastOrderId = 1003;
+}
+
 function loadStore(): InternalStore {
   if (typeof window === "undefined") return defaultStore();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultStore();
-    return { ...defaultStore(), ...JSON.parse(raw) };
+    if (!raw) {
+      const fresh = defaultStore();
+      ensureDemoSeed(fresh);
+      saveStore(fresh);
+      return fresh;
+    }
+    const store = { ...defaultStore(), ...JSON.parse(raw) };
+    const hadOrders = store.orders.length;
+    ensureDemoSeed(store);
+    if (!hadOrders && store.orders.length > 0) saveStore(store);
+    return store;
   } catch {
     return defaultStore();
   }
@@ -148,7 +245,7 @@ export function unlockVipClient(password: string) {
   return { ok: true, vip: true, ...fetchDropClient(true) };
 }
 
-export function createHoldClient() {
+export function createHoldClient(themeId?: string) {
   return withStore(store => {
     purgeExpiredHolds(store);
 
@@ -157,22 +254,27 @@ export function createHoldClient() {
       err.code = "PAUSED";
       throw err;
     }
-    if (store.stock <= 0) {
-      const err = new Error("SOLD OUT") as Error & { code?: string };
-      err.code = "SOLD_OUT";
-      throw err;
-    }
-    if (availableStock(store) <= 0) {
-      const err = new Error("Все в резерве, попробуйте через минуту") as Error & {
-        code?: string;
-      };
-      err.code = "ALL_HELD";
-      throw err;
+
+    if (themeId) {
+      assertThemePurchasable(themeId);
+    } else {
+      if (store.stock <= 0) {
+        const err = new Error("SOLD OUT") as Error & { code?: string };
+        err.code = "SOLD_OUT";
+        throw err;
+      }
+      if (availableStock(store) <= 0) {
+        const err = new Error("Все в резерве, попробуйте через минуту") as Error & {
+          code?: string;
+        };
+        err.code = "ALL_HELD";
+        throw err;
+      }
     }
 
     const holdId = uuid();
     const expiresAt = Date.now() + DROP_CONFIG.holdMinutes * 60_000;
-    store.holds[holdId] = { expiresAt };
+    store.holds[holdId] = { expiresAt, themeId };
     return { holdId, expiresAt, ...toPublicSnapshot(store) };
   });
 }
@@ -192,6 +294,10 @@ export async function completeCheckoutClient(payload: {
   deliveryType: "delivery" | "pickup";
   address: string;
   paymentMethod?: "paylov" | "apple" | "google";
+  productName?: string;
+  edition?: string;
+  amount?: number;
+  themeId?: string;
 }): Promise<CheckoutResult> {
   const {
     holdId,
@@ -201,6 +307,10 @@ export async function completeCheckoutClient(payload: {
     deliveryType,
     address,
     paymentMethod = "paylov",
+    productName,
+    edition,
+    amount = DROP_CONFIG.price,
+    themeId,
   } = payload;
 
   const store = loadStore();
@@ -208,6 +318,7 @@ export async function completeCheckoutClient(payload: {
 
   const serverHold = holdId ? store.holds[holdId] : null;
   const expiresAt = serverHold?.expiresAt ?? holdExpiresAt;
+  const checkoutThemeId = themeId ?? serverHold?.themeId;
 
   if (!holdId || !expiresAt || expiresAt < Date.now()) {
     const err = new Error("Резерв истёк. Нажмите BUY NOW снова.") as Error & { code?: string };
@@ -215,7 +326,18 @@ export async function completeCheckoutClient(payload: {
     throw err;
   }
 
-  if (store.stock <= 0) {
+  if (checkoutThemeId) {
+    try {
+      assertThemePurchasable(checkoutThemeId);
+    } catch (e) {
+      const err = e as Error & { code?: string };
+      if (err.code === "SOLD_OUT") {
+        err.code = "RACE_LOST";
+        err.message = "Кто-то успел раньше. SOLD OUT.";
+      }
+      throw err;
+    }
+  } else if (store.stock <= 0) {
     const err = new Error("Кто-то успел раньше. SOLD OUT.") as Error & { code?: string };
     err.code = "RACE_LOST";
     throw err;
@@ -230,7 +352,10 @@ export async function completeCheckoutClient(payload: {
       status: "failed",
       createdAt: new Date().toISOString(),
       buyer: { name, phone, deliveryType, address },
-      amount: DROP_CONFIG.price,
+      amount,
+      productName,
+      edition,
+      paymentMethod,
     });
     delete store.holds[holdId];
     saveStore(store);
@@ -247,7 +372,12 @@ export async function completeCheckoutClient(payload: {
   await new Promise(r => setTimeout(r, paymentMethod === "apple" ? 800 : 1200));
 
   const status: OrderStatus = paymentMethod === "apple" ? "pending" : "paid";
-  store.stock -= 1;
+  if (checkoutThemeId) {
+    reserveThemeStock(checkoutThemeId);
+  }
+  if (store.stock > 0) {
+    store.stock -= 1;
+  }
   delete store.holds[holdId];
   store.lastOrderId += 1;
   applyPhase(store);
@@ -260,7 +390,10 @@ export async function completeCheckoutClient(payload: {
     status,
     createdAt: new Date().toISOString(),
     buyer: { name, phone, deliveryType, address },
-    amount: DROP_CONFIG.price,
+    amount,
+    productName,
+    edition,
+    paymentMethod,
   });
 
   saveStore(store);
@@ -271,8 +404,11 @@ export async function completeCheckoutClient(payload: {
     orderId,
     receipt,
     status,
-    taneeshAchievement: status === "paid" ? "Владелец The4" : "",
   };
+}
+
+export function getStoreOrders(): Order[] {
+  return [...loadStore().orders];
 }
 
 export function fetchOrderClient(id: number): Order {
@@ -294,17 +430,41 @@ export function joinWaitlistClient(contact: string) {
   });
 }
 
+export function isOnWaitlistClient(contact: string): boolean {
+  const trimmed = contact.trim();
+  if (!trimmed) return false;
+  const digits = trimmed.replace(/\D/g, "");
+  return loadStore().waitlist.some(w => {
+    if (w.contact === trimmed) return true;
+    const wd = w.contact.replace(/\D/g, "");
+    return digits.length >= 9 && wd === digits;
+  });
+}
+
 export function adminLoginClient(password: string): string {
   if (password !== DROP_CONFIG.adminPassword) {
     throw new Error("Неверный пароль");
   }
   const token = `adm-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  adminTokens.add(token);
+  persistAdminToken(token);
   return token;
 }
 
 function assertAdmin(token: string) {
-  if (!adminTokens.has(token)) throw new Error("Unauthorized");
+  if (!adminTokens.has(token)) {
+    const saved = loadAdminTokens();
+    if (!saved.has(token)) throw new Error("Unauthorized");
+    adminTokens.add(token);
+  }
+}
+
+export function adminLogoutClient(token: string) {
+  adminTokens.delete(token);
+  const saved = loadAdminTokens();
+  saved.delete(token);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(ADMIN_TOKENS_KEY, JSON.stringify([...saved]));
+  }
 }
 
 export function adminFetchClient(token: string): AdminSnapshot {
@@ -342,7 +502,12 @@ export function adminActionClient(
       case "mark_order": {
         const order = store.orders.find(o => o.id === Number(payload.orderId));
         if (!order) throw new Error("Not found");
+        const prev = order.status;
         order.status = payload.status as OrderStatus;
+        if (prev === "paid" && order.status === "refunded") {
+          store.stock = Math.min(store.totalStock, store.stock + 1);
+          applyPhase(store);
+        }
         break;
       }
       case "confirm_pending": {

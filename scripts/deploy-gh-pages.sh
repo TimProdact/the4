@@ -6,6 +6,7 @@ cd "$ROOT"
 
 export NEXT_PUBLIC_BASE_PATH=/the4
 export GITHUB_PAGES=true
+export NEXT_PUBLIC_THE4_API_URL="${VITE_THE4_API_URL:-https://the4-admin-api.onrender.com}"
 
 echo "→ Deploying API (Render)..."
 node scripts/deploy-render.mjs || {
@@ -31,12 +32,10 @@ fi
 echo "→ Building static site..."
 npm run build
 
-if [ ! -f out/admin/mini-app-dist/index.html ]; then
-  echo "→ Copying mini-app into out/ (fallback)..."
-  mkdir -p out/admin
-  rm -rf out/admin/mini-app-dist
-  cp -R public/admin/mini-app-dist out/admin/mini-app-dist
-fi
+echo "→ Syncing mini-app into out/..."
+mkdir -p out/admin
+rm -rf out/admin/mini-app-dist
+cp -R public/admin/mini-app-dist out/admin/mini-app-dist
 
 if [ ! -f out/admin/mini-app-dist/index.html ]; then
   echo "❌ mini-app not in out/: out/admin/mini-app-dist/index.html missing"

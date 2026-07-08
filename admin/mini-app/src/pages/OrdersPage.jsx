@@ -7,15 +7,13 @@ import { formatPrice, orderStatusLabel } from '../utils.js';
 import { haptic } from '../api.js';
 import { SCREENS } from '../navigation/screens.js';
 
-const FILTERS = ['all', 'paid', 'pending', 'failed', 'refunded'];
-
 export function OrdersPage({ snapshot, push }) {
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('new');
   const orders = snapshot.orders || [];
 
-  const filtered = orders.filter(o => {
-    if (filter === 'all') return true;
-    return o.status === filter;
+  const filtered = orders.filter((o) => {
+    if (filter === 'new') return o.status === 'pending';
+    return true;
   }).slice().reverse();
 
   return (
@@ -24,20 +22,23 @@ export function OrdersPage({ snapshot, push }) {
       <InsetSection>
         <div className="fm-segment-wrap">
           <SegmentedControl>
-            {FILTERS.map(f => (
-              <SegmentedControl.Item
-                key={f}
-                selected={filter === f}
-                onClick={() => { setFilter(f); haptic('selection'); }}
-              >
-                {f}
-              </SegmentedControl.Item>
-            ))}
+            <SegmentedControl.Item
+              selected={filter === 'new'}
+              onClick={() => { setFilter('new'); haptic('selection'); }}
+            >
+              Новые
+            </SegmentedControl.Item>
+            <SegmentedControl.Item
+              selected={filter === 'all'}
+              onClick={() => { setFilter('all'); haptic('selection'); }}
+            >
+              Все
+            </SegmentedControl.Item>
           </SegmentedControl>
         </div>
         <List>
           <Section>
-            {filtered.map(o => (
+            {filtered.map((o) => (
               <Cell
                 key={o.id}
                 onClick={() => push(SCREENS.ORDER_DETAIL, { orderId: o.id })}

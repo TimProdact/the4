@@ -32,10 +32,126 @@ export interface DropTheme {
 
 export const DROP_THEMES: DropTheme[] = [
   {
+    id: "cream-tube",
+    model: asset("/models/gallery/cream-tube.glb"),
+    name: "SILK REPAIR",
+    edition: "Face Cream",
+    price: 320_000,
+    tagline: "Питание без веса",
+    colors: {
+      bg: "#faf7f2",
+      fg: "#2a2218",
+      muted: "#9a8a78",
+      accent: "#d4a574",
+      btn: "#3d2e22",
+      btnText: "#faf7f2",
+      selectionBg: "#3d2e22",
+      selectionFg: "#faf7f2",
+    },
+    lighting: {
+      ambient: 0.72,
+      keyIntensity: 1.05,
+      keyPosition: [4, 6, 5],
+      fillIntensity: 0.42,
+      fillPosition: [-3, 2, -3],
+      bg: "#faf7f2",
+    },
+    toolbarVariant: "light",
+    modelScale: 2.6,
+    cameraZ: 4.2,
+  },
+  {
+    id: "cosmetic-mirror",
+    model: asset("/models/gallery/cosmetic-mirror.glb"),
+    name: "TRUE REFLECT",
+    edition: "Compact Mirror",
+    price: 185_000,
+    tagline: "Смотри честно",
+    colors: {
+      bg: "#f0ece8",
+      fg: "#1c1816",
+      muted: "#8a8078",
+      accent: "#c9a88a",
+      btn: "#2a2420",
+      btnText: "#f0ece8",
+      selectionBg: "#2a2420",
+      selectionFg: "#f0ece8",
+    },
+    lighting: {
+      ambient: 0.78,
+      keyIntensity: 1.1,
+      keyPosition: [3, 5, 6],
+      fillIntensity: 0.5,
+      fillPosition: [-4, 2, -2],
+      bg: "#f0ece8",
+    },
+    toolbarVariant: "light",
+    modelScale: 3.2,
+    cameraZ: 3.6,
+  },
+  {
+    id: "pixel-compact",
+    model: asset("/models/gallery/pixel-compact.glb"),
+    name: "PIXEL GLOW",
+    edition: "Cushion Compact",
+    price: 290_000,
+    tagline: "Тон — в один тап",
+    colors: {
+      bg: "#1a1030",
+      fg: "#f0e6ff",
+      muted: "#a080d0",
+      accent: "#e879f9",
+      btn: "#a21caf",
+      btnText: "#fdf4ff",
+      selectionBg: "#e879f9",
+      selectionFg: "#1a1030",
+    },
+    lighting: {
+      ambient: 0.5,
+      keyIntensity: 1.15,
+      keyPosition: [4, 6, 5],
+      fillIntensity: 0.48,
+      fillPosition: [-3, 2, -4],
+      bg: "#1a1030",
+    },
+    toolbarVariant: "dark",
+    modelScale: 2.1,
+    cameraZ: 4.5,
+  },
+  {
+    id: "velvet-wings",
+    model: asset("/models/gallery/velvet-wings.glb"),
+    name: "WINGS OF SCENT",
+    edition: "Eau de Parfum",
+    price: 680_000,
+    tagline: "Аромат, который летит",
+    colors: {
+      bg: "#120a18",
+      fg: "#f5e8ff",
+      muted: "#b090c8",
+      accent: "#d946ef",
+      btn: "#86198f",
+      btnText: "#fdf4ff",
+      selectionBg: "#d946ef",
+      selectionFg: "#120a18",
+    },
+    lighting: {
+      ambient: 0.42,
+      keyIntensity: 1.25,
+      keyPosition: [3, 5, 6],
+      fillIntensity: 0.55,
+      fillPosition: [-5, 2, -3],
+      bg: "#120a18",
+    },
+    toolbarVariant: "dark",
+    modelScale: 1.9,
+    cameraZ: 5.2,
+  },
+  {
     id: "heart",
     model: asset("/models/gallery/heart.glb"),
-    name: "PULSE HEART",
-    edition: "Valentine Drop",
+    name: "PULSE TINT",
+    edition: "Lip Oil",
     price: 420_000,
     tagline: "Бьётся в такт",
     colors: {
@@ -63,8 +179,8 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "plant",
     model: asset("/models/gallery/plant.glb"),
-    name: "TINY PLANET",
-    edition: "Botanical",
+    name: "BOTANICA",
+    edition: "Botanical Serum",
     price: 380_000,
     tagline: "Живёт на полке",
     colors: {
@@ -92,10 +208,10 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "toilet-paper",
     model: asset("/models/gallery/toilet-paper.glb"),
-    name: "ROLL CLASSIC",
-    edition: "Essential",
+    name: "CLOUD SOFT",
+    edition: "Cleansing Pads",
     price: 99_000,
-    tagline: "Никогда не подведёт",
+    tagline: "Нежность в рулоне",
     colors: {
       bg: "#f4f8fc",
       fg: "#1a2a3a",
@@ -121,10 +237,10 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "zombie",
     model: asset("/models/gallery/zombie.glb"),
-    name: "DEAD RISE",
-    edition: "Horror Pack",
+    name: "MIDNIGHT PEEL",
+    edition: "Exfoliating Mask",
     price: 666_000,
-    tagline: "Уже идёт за тобой",
+    tagline: "Снимает всё лишнее",
     colors: {
       bg: "#0d120d",
       fg: "#c8e6c0",
@@ -150,8 +266,8 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "pixel-figure",
     model: asset("/models/gallery/pixel-figure.glb"),
-    name: "PIXEL BUDDY",
-    edition: "8-Bit",
+    name: "8-BIT PALETTE",
+    edition: "Eyeshadow",
     price: 256_000,
     tagline: "Ретро, но объёмный",
     colors: {
@@ -179,10 +295,10 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "raccoon",
     model: asset("/models/gallery/raccoon.glb"),
-    name: "TRASH PANDA",
-    edition: "Cute Chaos",
+    name: "NIGHT FIX",
+    edition: "Eye Cream",
     price: 450_000,
-    tagline: "Милый, но опасный",
+    tagline: "После бессонной ночи",
     colors: {
       bg: "#f5ebe0",
       fg: "#2c1810",
@@ -208,10 +324,10 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "dance",
     model: asset("/models/gallery/dance.glb"),
-    name: "MOTION STUDY",
-    edition: "Kinetic",
+    name: "KINETIC MIST",
+    edition: "Setting Spray",
     price: 520_000,
-    tagline: "Движение — всё",
+    tagline: "Макияж не сдвинется",
     colors: {
       bg: "#0a0a14",
       fg: "#e0f4ff",
@@ -237,10 +353,10 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "bomb",
     model: asset("/models/gallery/bomb.glb"),
-    name: "FUSE LIT",
-    edition: "High Risk",
+    name: "VITAMIN POP",
+    edition: "C Serum",
     price: 999_000,
-    tagline: "Тик-так",
+    tagline: "Заряд для кожи",
     colors: {
       bg: "#141010",
       fg: "#fff0e0",
@@ -266,10 +382,10 @@ export const DROP_THEMES: DropTheme[] = [
   {
     id: "light",
     model: asset("/models/gallery/light.glb"),
-    name: "LUMEN",
-    edition: "Glow",
+    name: "LUMEN GLOW",
+    edition: "Highlighter",
     price: 750_000,
-    tagline: "Свет в темноте",
+    tagline: "Свет с кожи",
     colors: {
       bg: "#faf6ee",
       fg: "#2a2210",
@@ -296,6 +412,34 @@ export const DROP_THEMES: DropTheme[] = [
 
 export function getThemeById(id: string) {
   return DROP_THEMES.find(t => t.id === id) ?? DROP_THEMES[0];
+}
+
+export function mergeLiveProduct(base: DropTheme, product?: {
+  id?: string;
+  name?: string;
+  edition?: string;
+  price?: number;
+  tagline?: string;
+  modelUrl?: string;
+  colors?: Partial<DropTheme["colors"]>;
+  toolbarVariant?: DropTheme["toolbarVariant"];
+  modelScale?: number;
+  cameraZ?: number;
+}): DropTheme {
+  if (!product) return base;
+  return {
+    ...base,
+    id: product.id || base.id,
+    name: product.name || base.name,
+    edition: product.edition || base.edition,
+    price: product.price ?? base.price,
+    tagline: product.tagline || base.tagline,
+    model: product.modelUrl || base.model,
+    colors: product.colors ? { ...base.colors, ...product.colors } : base.colors,
+    toolbarVariant: product.toolbarVariant || base.toolbarVariant,
+    modelScale: product.modelScale ?? base.modelScale,
+    cameraZ: product.cameraZ ?? base.cameraZ,
+  };
 }
 
 export function applyTheme(theme: DropTheme) {

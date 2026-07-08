@@ -6,12 +6,9 @@ import { useNavStack } from './hooks/useNavStack.js';
 import { waitForInitData, hasTelegramContext } from './telegram-init.js';
 import { SCREENS } from './navigation/screens.js';
 import { HubPage } from './pages/HubPage.jsx';
-import { DropPage } from './pages/DropPage.jsx';
+import { ProductPage } from './pages/ProductPage.jsx';
 import { OrdersPage } from './pages/OrdersPage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
-import { WaitlistPage } from './pages/WaitlistPage.jsx';
-import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
-import { SettingsPage } from './pages/SettingsPage.jsx';
 import { HubSkeleton } from './components/HubSkeleton.jsx';
 
 export default function App() {
@@ -76,8 +73,8 @@ export default function App() {
     switch (id) {
       case SCREENS.HUB:
         return <HubPage snapshot={snapshot} push={push} />;
-      case SCREENS.DROP:
-        return <DropPage snapshot={snapshot} onSnapshotChange={setSnapshot} />;
+      case SCREENS.PRODUCT:
+        return <ProductPage snapshot={snapshot} onSnapshotChange={setSnapshot} />;
       case SCREENS.ORDERS:
         return <OrdersPage snapshot={snapshot} push={push} />;
       case SCREENS.ORDER_DETAIL:
@@ -87,12 +84,6 @@ export default function App() {
             onSnapshotChange={setSnapshot}
           />
         );
-      case SCREENS.WAITLIST:
-        return <WaitlistPage snapshot={snapshot} />;
-      case SCREENS.ANALYTICS:
-        return <AnalyticsPage snapshot={snapshot} onSnapshotChange={setSnapshot} />;
-      case SCREENS.SETTINGS:
-        return <SettingsPage />;
       default:
         return <HubPage snapshot={snapshot} push={push} />;
     }

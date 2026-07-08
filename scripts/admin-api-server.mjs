@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 /**
  * THE4 Admin API — file-based HTTP server (bot-store.mjs).
- * Usage: node scripts/admin-api-server.mjs
  */
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateInitData } from '../bot/telegram-auth.mjs';
-import { getSnapshot, runAction } from './bot-store.mjs';
+import { getSnapshot, getPublicDrop, runAction, runPublicAction } from './bot-store.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -67,6 +66,12 @@ function send(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+async function readBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+}
+
 function authUser(body) {
   if (!TOKEN) throw Object.assign(new Error('Bot not configured'), { status: 500 });
   const parsed = validateInitData(body.initData, TOKEN);
@@ -78,21 +83,32 @@ function authUser(body) {
 }
 
 const server = createServer(async (req, res) => {
+  const path = (req.url || '').split('?')[0];
+
   if (req.method === 'OPTIONS') {
     cors(res);
     res.writeHead(204);
     return res.end();
   }
-  if (req.method === 'GET' && (req.url === '/' || req.url === '/health')) {
+
+  if (req.method === 'GET' && (path === '/' || path === '/health')) {
     return send(res, 200, { ok: true, service: 'the4-admin-api' });
   }
+
+  if (req.method === 'GET' && path === '/drop') {
+    try {
+      const vip = new URL(req.url || '', 'http://local').searchParams.get('vip') === '1';
+      return send(res, 200, getPublicDrop(vip));
+    } catch (e) {
+      return send(res, 500, { error: e.message || 'Server error' });
+    }
+  }
+
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only' });
 
   let body = {};
   try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+    body = await readBody(req);
   } catch {
     return send(res, 400, { error: 'Invalid JSON' });
   }
@@ -103,6 +119,11 @@ const server = createServer(async (req, res) => {
       admins.add(String(body.telegramId));
       saveAdmins(admins);
       return send(res, 200, { ok: true });
+    }
+
+    if (body.action === 'public') {
+      const result = runPublicAction(body.publicAction, body.payload || {});
+      return send(res, 200, result);
     }
 
     const user = authUser(body);

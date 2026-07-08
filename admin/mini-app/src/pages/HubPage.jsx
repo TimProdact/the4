@@ -1,12 +1,8 @@
+import { useState } from 'react';
 import { Icon20Copy } from '@telegram-apps/telegram-ui/dist/icons/20/copy';
+import { BottomSheet } from '../components/BottomSheet.jsx';
 import { MenuGroup, MenuRow } from '../components/MenuRow.jsx';
-import {
-  formatPrice,
-  phaseLabel,
-  pendingOrders,
-  todayMetrics,
-  vitrinaUrl,
-} from '../utils.js';
+import { formatPrice, phaseLabel, pendingOrders, todayMetrics, vitrinaUrl } from '../utils.js';
 import { copyText, haptic } from '../api.js';
 import { SCREENS } from '../navigation/screens.js';
 
@@ -22,40 +18,21 @@ function HubAction({ label, glyph, badge, onClick }) {
   );
 }
 
-function DropStatusCard({ snapshot, onPress }) {
-  const metrics = todayMetrics(snapshot.orders);
-  return (
-    <button type="button" className="fm-hub-summary-card fm-tap" onClick={onPress}>
-      <div className="fm-hub-summary-head">
-        <span className="fm-hub-summary-title">Статус дропа</span>
-        <span className="fm-hub-summary-chevron" aria-hidden>›</span>
-      </div>
-      <div className="fm-hub-summary-metrics fm-hub-summary-metrics--3">
-        <div className="fm-hub-summary-metric">
-          <span className="fm-hub-summary-label">Фаза</span>
-          <span className="fm-hub-summary-value fm-hub-summary-value--accent">
-            {phaseLabel(snapshot.phase, snapshot.paused)}
-          </span>
-        </div>
-        <div className="fm-hub-summary-metric">
-          <span className="fm-hub-summary-label">Остаток</span>
-          <span className="fm-hub-summary-value">
-            {snapshot.available} / {snapshot.stock}
-          </span>
-        </div>
-        <div className="fm-hub-summary-metric">
-          <span className="fm-hub-summary-label">Сегодня</span>
-          <span className="fm-hub-summary-value">{formatPrice(metrics.todayRevenue)}</span>
-        </div>
-      </div>
-    </button>
-  );
+function formatDropDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('ru-RU', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
 }
 
 export function HubPage({ snapshot, push }) {
   const tg = window.Telegram?.WebApp;
   const pending = pendingOrders(snapshot.orders);
+  const metrics = todayMetrics(snapshot.orders);
+  const product = snapshot.product || {};
   const url = vitrinaUrl();
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const waitlist = snapshot.waitlist || [];
 
   const openVitrina = () => {
     haptic('light');
@@ -72,43 +49,26 @@ export function HubPage({ snapshot, push }) {
   return (
     <main className="fm-twa fm-home fm-hub">
       <header className="fm-hub-hero">
-        <div className="fm-hub-hero-bar">
-          <button
-            type="button"
-            className="fm-hub-hero-round-btn"
-            aria-label="Открыть витрину"
-            onClick={openVitrina}
-          >
-            🐱
-          </button>
-        </div>
         <div className="fm-hub-hero-center">
           <div className="fm-hub-avatar" aria-hidden>
             <span className="fm-hub-avatar-emoji">🐱</span>
           </div>
-          <h1 className="fm-hub-title">THE4</h1>
-          <p className="fm-hub-subtitle">SILK REPAIR · 1st Drop</p>
-          <div className="fm-hub-vitrina-url">
-            <button type="button" className="fm-hub-vitrina-url-link" onClick={openVitrina}>
-              timprodact.github.io/the4
-            </button>
-            <button
-              type="button"
-              className="fm-hub-vitrina-url-copy"
-              aria-label="Скопировать ссылку"
-              onClick={() => copyText(url)}
-            >
-              <Icon20Copy />
-            </button>
+          <h1 className="fm-hub-title">{product.name || 'THE4'}</h1>
+          <p className="fm-hub-subtitle">{product.edition || 'Drop'}</p>
+          <div className="fm-hub-status-strip">
+            <span className="fm-hub-status-pill">{phaseLabel(snapshot.phase, snapshot.paused)}</span>
+            <span>{snapshot.available} / {snapshot.stock}</span>
+            <span>{formatDropDate(snapshot.startsAt)}</span>
           </div>
+          <p className="fm-hub-metric-line">Сегодня: {formatPrice(metrics.todayRevenue)}</p>
         </div>
       </header>
 
-      <div className="fm-hub-actions fm-hub-actions--4" role="toolbar" aria-label="Быстрые разделы">
+      <div className="fm-hub-actions fm-hub-actions--2" role="toolbar">
         <HubAction
-          label="Дроп"
+          label="Товар"
           glyph="📦"
-          onClick={() => { haptic('selection'); push(SCREENS.DROP); }}
+          onClick={() => { haptic('selection'); push(SCREENS.PRODUCT); }}
         />
         <HubAction
           label="Заказы"
@@ -116,49 +76,42 @@ export function HubPage({ snapshot, push }) {
           badge={pending.length || null}
           onClick={() => { haptic('selection'); push(SCREENS.ORDERS); }}
         />
-        <HubAction
-          label="Waitlist"
-          glyph="📋"
-          badge={snapshot.waitlist.length || null}
-          onClick={() => { haptic('selection'); push(SCREENS.WAITLIST); }}
-        />
-        <HubAction
-          label="Аналитика"
-          glyph="📊"
-          onClick={() => { haptic('selection'); push(SCREENS.ANALYTICS); }}
-        />
       </div>
 
       <div className="fm-hub-stack">
-        <DropStatusCard snapshot={snapshot} onPress={() => { haptic('selection'); push(SCREENS.DROP); }} />
+        {waitlist.length > 0 && (
+          <MenuGroup>
+            <MenuRow
+              label="Waitlist"
+              glyph="📋"
+              tone="#8e8e93"
+              value={`${waitlist.length}`}
+              onClick={() => setWaitlistOpen(true)}
+              last
+            />
+          </MenuGroup>
+        )}
 
         <MenuGroup>
-          <MenuRow
-            label="Настройки"
-            glyph="⚙️"
-            tone="#8e8e93"
-            onClick={() => push(SCREENS.SETTINGS)}
-          />
-          <MenuRow
-            label="Поддержка"
-            glyph="💬"
-            tone="#007aff"
-            onClick={openSupport}
-          />
-          <MenuRow
-            label="Витрина"
-            glyph="🌐"
-            tone="#34c759"
-            value="Открыть"
-            onClick={openVitrina}
-            last
-          />
+          <MenuRow label="Открыть витрину" glyph="🌐" tone="#34c759" onClick={openVitrina} />
+          <MenuRow label="Поддержка" glyph="💬" tone="#007aff" onClick={openSupport} last />
         </MenuGroup>
       </div>
 
       <footer className="fm-hub-footer">
-        <span>THE4 ADMIN</span>
+        <span>@pocketpals_bot</span>
       </footer>
+
+      <BottomSheet open={waitlistOpen} onClose={() => setWaitlistOpen(false)} title={`Waitlist · ${waitlist.length}`}>
+        <ul className="fm-waitlist-list">
+          {waitlist.map((w) => (
+            <li key={w.id}>{w.contact}</li>
+          ))}
+        </ul>
+        <button type="button" className="fm-waitlist-copy" onClick={() => copyText(waitlist.map(w => w.contact).join('\n'))}>
+          <Icon20Copy /> Скопировать все
+        </button>
+      </BottomSheet>
     </main>
   );
 }

@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from "react";
 import type { DropSnapshot } from "@/lib/api";
-import { DROP_THEMES, type DropTheme } from "@/lib/drop-themes";
+import { DROP_THEMES } from "@/lib/drop-themes";
 import { computePhase } from "@/lib/drop-config";
-import { checkoutPreviewStep, readPreviewParams, type DropPreview } from "@/lib/preview";
+import { readPreviewParams, type CheckoutPreview, type DropPreview } from "@/lib/preview";
+import { trackEvent } from "@/lib/analytics";
+import { PreviewProvider, usePreview } from "@/lib/preview-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { useDropStream } from "@/hooks/use-drop-stream";
 import { useNow } from "@/hooks/use-now";
 import { PreDropScreen } from "./pre-drop-screen";
-import { SoldOutScreen } from "./sold-out-screen";
 import { ActiveDropScreen } from "./active-drop-screen";
-import { PausedScreen } from "./paused-screen";
 
 interface DropAppProps {
   initial: DropSnapshot;
@@ -28,13 +28,16 @@ function readPrefill() {
   };
 }
 
-function DropAppInner({
+function DropScreens({
   initial,
-  preview,
+  checkoutPreview,
+  themeId,
 }: {
   initial: DropSnapshot;
-  preview: DropPreview | null;
+  checkoutPreview?: CheckoutPreview;
+  themeId?: string | null;
 }) {
+  const { preview } = usePreview();
   const [vip, setVip] = useState(false);
   const [dropStarted, setDropStarted] = useState(false);
   const [prefill, setPrefill] = useState<{ name?: string; phone?: string }>({});
@@ -42,71 +45,74 @@ function DropAppInner({
   const now = useNow(1000);
 
   useEffect(() => {
+    trackEvent("drop_view", { preview: preview ?? "live" });
+  }, [preview]);
+
+  useEffect(() => {
     setVip(sessionStorage.getItem(VIP_KEY) === "1");
     setPrefill(readPrefill());
-    if (preview === "active" || preview?.startsWith("checkout_")) {
+    if (preview === "active") {
       setDropStarted(true);
     }
   }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
     if (now < new Date(snap.startsAt).getTime()) {
       setDropStarted(false);
     }
-  }, [snap.startsAt, now]);
+  }, [snap.startsAt, now, preview]);
 
-  const checkoutStep = checkoutPreviewStep(preview);
-  const forceOffline = preview === "offline";
-  const forceAllHeld = preview === "all_held";
-
-  if (preview === "paused" || snap.paused) {
-    return <PausedScreen />;
-  }
+  const basePhase = snap.phase ?? computePhase(snap.stock, vip, now, snap.startsAt);
+  const livePhase = vip && basePhase === "pre_drop" ? "active" : basePhase;
 
   const timedPhase = dropStarted
     ? snap.stock <= 0
       ? "sold_out"
       : "active"
-    : computePhase(snap.stock, vip, now, snap.startsAt);
+    : livePhase;
 
-  if (preview === "pre_drop" || timedPhase === "pre_drop") {
-    return (
-      <PreDropScreen
-        startsAt={snap.startsAt}
-        onVipUnlock={() => {
-          sessionStorage.setItem(VIP_KEY, "1");
-          setVip(true);
-        }}
-        onTimerDone={() => setDropStarted(true)}
-      />
-    );
-  }
-
-  if (preview === "sold_out" || timedPhase === "sold_out" || snap.stock <= 0) {
-    return <SoldOutScreen />;
-  }
+  const phase: DropPreview | "active" | "pre_drop" | "sold_out" =
+    preview === "active"
+      ? "active"
+      : preview === "pre_drop"
+        ? "pre_drop"
+        : preview === "sold_out"
+          ? "sold_out"
+          : timedPhase;
 
   return (
-    <ActiveDropScreen
-      snap={{
-        ...snap,
-        phase: "active",
-        available: forceAllHeld ? 0 : snap.available,
-        stock: forceAllHeld ? Math.max(snap.stock, 1) : snap.stock,
-      }}
-      prefill={prefill}
-      forceOffline={forceOffline}
-      forceAllHeld={forceAllHeld}
-      checkoutPreviewStep={checkoutStep}
-      checkoutOpen={!!checkoutStep}
-    />
+    <ThemeProvider
+      initialThemeId={themeId ?? snap.product?.id ?? DROP_THEMES[0].id}
+      liveProduct={snap.product}
+    >
+      {phase === "pre_drop" ? (
+        <PreDropScreen
+          startsAt={snap.startsAt}
+          previewMode={preview === "pre_drop"}
+          onVipUnlock={() => {
+            sessionStorage.setItem(VIP_KEY, "1");
+            setVip(true);
+          }}
+          onTimerDone={() => setDropStarted(true)}
+        />
+      ) : (
+        <ActiveDropScreen
+          snap={{ ...snap, phase: phase === "sold_out" ? "sold_out" : "active" }}
+          prefill={prefill}
+          checkoutPreview={checkoutPreview}
+        />
+      )}
+    </ThemeProvider>
   );
 }
 
 export function DropApp({ initial }: DropAppProps) {
-  const [boot, setBoot] = useState<{ preview: DropPreview | null; themeId: string | null } | null>(
-    null,
-  );
+  const [boot, setBoot] = useState<{
+    preview: DropPreview | null;
+    themeId: string | null;
+    checkout: CheckoutPreview | null;
+  } | null>(null);
 
   useEffect(() => {
     setBoot(readPreviewParams());
@@ -121,8 +127,12 @@ export function DropApp({ initial }: DropAppProps) {
   }
 
   return (
-    <ThemeProvider initialThemeId={boot.themeId ?? DROP_THEMES[0].id}>
-      <DropAppInner initial={initial} preview={boot.preview} />
-    </ThemeProvider>
+    <PreviewProvider initialPreview={boot.preview}>
+      <DropScreens
+        initial={initial}
+        checkoutPreview={boot.checkout ?? undefined}
+        themeId={boot.themeId}
+      />
+    </PreviewProvider>
   );
 }
