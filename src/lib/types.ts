@@ -63,6 +63,44 @@ export interface DropSnapshot {
   images: readonly string[];
   paused: boolean;
   product?: LiveProduct;
+  dropId?: string;
+}
+
+export interface SocialLink {
+  id: string;
+  platform: string;
+  url: string;
+  visible?: boolean;
+}
+
+export interface StorefrontDropCard {
+  id: string;
+  productId: string;
+  phase: DropPhase;
+  startsAt: string;
+  stock: number;
+  available: number;
+  paused: boolean;
+  name: string;
+  edition: string;
+  price: number;
+  currency: string;
+  images: string[];
+  mediaType?: string;
+  modelUrl?: string;
+}
+
+export interface StorefrontSnapshot {
+  storefront: {
+    displayName: string;
+    bio: string;
+    avatarUrl: string;
+    logoEmoji: string;
+    heroBgUrl?: string;
+    socialLinks: SocialLink[];
+  };
+  drops: StorefrontDropCard[];
+  products: LiveProduct[];
 }
 
 export interface CheckoutResult {

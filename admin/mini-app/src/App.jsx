@@ -8,13 +8,16 @@ import { SCREENS } from './navigation/screens.js';
 import { needsOnboarding } from './utils.js';
 import { HubPage } from './pages/HubPage.jsx';
 import { WizardPage } from './pages/WizardPage.jsx';
+import { CatalogPage } from './pages/CatalogPage.jsx';
 import { ProductPage } from './pages/ProductPage.jsx';
 import { ProductMediaPage } from './pages/ProductMediaPage.jsx';
+import { DropsListPage } from './pages/DropsListPage.jsx';
 import { DropPage } from './pages/DropPage.jsx';
 import { OrdersPage } from './pages/OrdersPage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { WaitlistPage } from './pages/WaitlistPage.jsx';
-import { BrandEditPage } from './pages/BrandEditPage.jsx';
+import { StorefrontEditPage } from './pages/StorefrontEditPage.jsx';
+import { SocialsPage } from './pages/SocialsPage.jsx';
 import { QrPage } from './pages/QrPage.jsx';
 import { HubSkeleton } from './components/HubSkeleton.jsx';
 
@@ -90,20 +93,47 @@ export default function App() {
             snapshot={snapshot}
             onSnapshotChange={setSnapshot}
             onComplete={() => reset(SCREENS.HUB)}
+            launchOnly={Boolean(params.launchOnly)}
           />
         );
+      case SCREENS.CATALOG:
+        return <CatalogPage snapshot={snapshot} onSnapshotChange={setSnapshot} push={push} />;
       case SCREENS.PRODUCT:
-        return <ProductPage snapshot={snapshot} onSnapshotChange={setSnapshot} push={push} />;
+        return (
+          <ProductPage
+            snapshot={snapshot}
+            onSnapshotChange={setSnapshot}
+            push={push}
+            productId={params.productId}
+          />
+        );
       case SCREENS.PRODUCT_MEDIA:
         return (
           <ProductMediaPage
             snapshot={snapshot}
             onSnapshotChange={setSnapshot}
             onDone={pop}
+            productId={params.productId}
+          />
+        );
+      case SCREENS.DROPS:
+        return (
+          <DropsListPage
+            snapshot={snapshot}
+            push={(screen, p = {}) => {
+              if (screen === SCREENS.WIZARD) push(SCREENS.WIZARD, { launchOnly: true });
+              else push(screen, p);
+            }}
           />
         );
       case SCREENS.DROP:
-        return <DropPage snapshot={snapshot} onSnapshotChange={setSnapshot} />;
+        return (
+          <DropPage
+            snapshot={snapshot}
+            onSnapshotChange={setSnapshot}
+            dropId={params.dropId}
+          />
+        );
       case SCREENS.ORDERS:
         return <OrdersPage snapshot={snapshot} push={push} />;
       case SCREENS.ORDER_DETAIL:
@@ -115,14 +145,17 @@ export default function App() {
         );
       case SCREENS.WAITLIST:
         return <WaitlistPage snapshot={snapshot} />;
-      case SCREENS.STORE_EDIT:
+      case SCREENS.STOREFRONT_EDIT:
         return (
-          <BrandEditPage
+          <StorefrontEditPage
             snapshot={snapshot}
             onSnapshotChange={setSnapshot}
             onDone={pop}
+            push={push}
           />
         );
+      case SCREENS.SOCIALS:
+        return <SocialsPage snapshot={snapshot} onSnapshotChange={setSnapshot} />;
       case SCREENS.STORE_QR:
         return <QrPage snapshot={snapshot} onDone={pop} />;
       default:

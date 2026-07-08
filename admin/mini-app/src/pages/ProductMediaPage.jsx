@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { PageHeader, SubpageLayout } from '../components/PageLayout.jsx';
 import { InsetSection } from '../components/InsetSection.jsx';
 import { PRODUCT_MODELS } from '../config/productModels.js';
@@ -13,22 +13,20 @@ function readImageFile(file) {
   });
 }
 
-export function ProductMediaPage({ snapshot, onSnapshotChange, onDone }) {
-  const product = snapshot.product || {};
+export function ProductMediaPage({ snapshot, onSnapshotChange, onDone, productId }) {
+  const product = useMemo(() => {
+    const list = snapshot.products || [];
+    return list.find((p) => p.id === productId) || list[0] || snapshot.product || {};
+  }, [snapshot, productId]);
+
   const fileRef = useRef(null);
   const [busy, setBusy] = useState(false);
 
-  const pickModel = async (model) => {
+  const save = async (patch) => {
     if (busy) return;
     setBusy(true);
     try {
-      const next = await runActionSafe('update_product', {
-        product: {
-          id: model.id,
-          mediaType: '3d',
-          modelUrl: model.url,
-        },
-      });
+      const next = await runActionSafe('update_product', { productId: product.id, product: patch });
       onSnapshotChange(next);
       haptic('success');
       onDone?.();
@@ -37,23 +35,16 @@ export function ProductMediaPage({ snapshot, onSnapshotChange, onDone }) {
     }
   };
 
+  const pickModel = (model) => save({
+    id: model.id,
+    mediaType: '3d',
+    modelUrl: model.url,
+  });
+
   const pickPhoto = async (file) => {
-    if (!file || busy) return;
-    setBusy(true);
-    try {
-      const dataUrl = await readImageFile(file);
-      const next = await runActionSafe('update_product', {
-        product: {
-          mediaType: 'images',
-          images: [dataUrl],
-        },
-      });
-      onSnapshotChange(next);
-      haptic('success');
-      onDone?.();
-    } finally {
-      setBusy(false);
-    }
+    if (!file) return;
+    const dataUrl = await readImageFile(file);
+    await save({ mediaType: 'images', images: [dataUrl] });
   };
 
   const activeId = product.mediaType === '3d' ? product.id : null;

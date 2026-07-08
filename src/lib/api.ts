@@ -15,6 +15,7 @@ import {
 } from "./client-store";
 import {
   fetchRemoteDrop,
+  readDropIdFromLocation,
   remoteDropEnabled,
   remotePublicAction,
 } from "./remote-drop-api";
@@ -30,9 +31,9 @@ export type { AdminSnapshot, CheckoutResult, DropSnapshot, Order };
 export type DropPhase = DropSnapshot["phase"];
 export { DROP_CONFIG };
 
-export async function fetchDrop(vip = false): Promise<DropSnapshot> {
+export async function fetchDrop(vip = false, dropId?: string | null): Promise<DropSnapshot> {
   if (remoteDropEnabled()) {
-    const remote = await fetchRemoteDrop(vip);
+    const remote = await fetchRemoteDrop(vip, dropId ?? readDropIdFromLocation());
     if (remote) return remote;
   }
   return fetchDropClient(vip);

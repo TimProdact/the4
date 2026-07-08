@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button } from '@telegram-apps/telegram-ui';
 import { ProductPreview } from '../components/ProductPreview.jsx';
 import { PRODUCT_MODELS } from '../config/productModels.js';
+import { formatPrice } from '../utils.js';
 import { haptic, runActionSafe } from '../api.js';
 
 function toDateValue(iso) {
@@ -26,50 +27,61 @@ function mergeDateTime(datePart, timePart) {
   return base.toISOString();
 }
 
-export function WizardPage({ snapshot, onSnapshotChange, onComplete }) {
-  const product = snapshot.product || {};
+export function WizardPage({ snapshot, onSnapshotChange, onComplete, launchOnly = false }) {
+  const products = snapshot.products || [];
+  const isLaunch = launchOnly || (snapshot.onboardingComplete && products.length > 0);
   const [step, setStep] = useState(1);
-  const [name, setName] = useState(product.name || '');
-  const [price, setPrice] = useState(String(product.price || '320000'));
-  const [modelId, setModelId] = useState(product.id || PRODUCT_MODELS[0].id);
-  const [mediaType, setMediaType] = useState(product.mediaType || '3d');
-  const [imageData, setImageData] = useState(product.images?.[0] || '');
+  const [selectedProductId, setSelectedProductId] = useState(products[0]?.id || '');
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('320000');
+  const [modelId, setModelId] = useState(PRODUCT_MODELS[0].id);
+  const [mediaType, setMediaType] = useState('3d');
+  const [imageData, setImageData] = useState('');
   const [date, setDate] = useState(toDateValue(snapshot.startsAt));
   const [time, setTime] = useState(toTimeValue(snapshot.startsAt));
-  const [stock, setStock] = useState(snapshot.totalStock || 100);
+  const [stock, setStock] = useState(100);
   const [busy, setBusy] = useState(false);
 
-  const previewProduct = useMemo(() => ({
-    name,
-    id: modelId,
-    mediaType,
-    images: imageData ? [imageData] : product.images,
-  }), [name, modelId, mediaType, imageData, product.images]);
+  const totalSteps = isLaunch ? 2 : 3;
+  const previewProduct = useMemo(() => {
+    const existing = products.find((p) => p.id === selectedProductId);
+    if (existing) return existing;
+    return { name, id: modelId, mediaType, images: imageData ? [imageData] : [] };
+  }, [products, selectedProductId, name, modelId, mediaType, imageData]);
 
   const next = () => {
     haptic('selection');
-    setStep((s) => Math.min(3, s + 1));
+    setStep((s) => Math.min(totalSteps, s + 1));
   };
 
   const launch = async () => {
     if (busy) return;
-    const model = PRODUCT_MODELS.find((m) => m.id === modelId) || PRODUCT_MODELS[0];
-    const priceNum = Number(String(price).replace(/\s/g, ''));
-    if (!name.trim()) return;
-    if (!Number.isFinite(priceNum) || priceNum <= 0) return;
-
     setBusy(true);
     try {
-      const nextSnap = await runActionSafe('launch_drop', {
-        name: name.trim(),
-        price: priceNum,
-        startsAt: mergeDateTime(date, time),
-        stock,
-        totalStock: stock,
-        product: mediaType === 'images' && imageData
-          ? { mediaType: 'images', images: [imageData] }
-          : { id: model.id, mediaType: '3d', modelUrl: model.url },
-      });
+      let payload;
+      if (isLaunch && selectedProductId) {
+        payload = {
+          productId: selectedProductId,
+          startsAt: mergeDateTime(date, time),
+          stock,
+          totalStock: stock,
+        };
+      } else {
+        const model = PRODUCT_MODELS.find((m) => m.id === modelId) || PRODUCT_MODELS[0];
+        const priceNum = Number(String(price).replace(/\s/g, ''));
+        if (!name.trim() || !Number.isFinite(priceNum) || priceNum <= 0) return;
+        payload = {
+          name: name.trim(),
+          price: priceNum,
+          startsAt: mergeDateTime(date, time),
+          stock,
+          totalStock: stock,
+          product: mediaType === 'images' && imageData
+            ? { mediaType: 'images', images: [imageData] }
+            : { id: model.id, mediaType: '3d', modelUrl: model.url },
+        };
+      }
+      const nextSnap = await runActionSafe('launch_drop', payload);
       onSnapshotChange(nextSnap);
       haptic('success');
       onComplete?.();
@@ -80,37 +92,46 @@ export function WizardPage({ snapshot, onSnapshotChange, onComplete }) {
 
   return (
     <main className="fm-twa fm-wizard">
-      <div className="fm-wizard-progress">Шаг {step}/3</div>
+      <div className="fm-wizard-progress">Шаг {step}/{totalSteps}</div>
 
-      {step === 1 && (
+      {step === 1 && isLaunch && (
         <section className="fm-wizard-step">
-          <h1 className="fm-wizard-title">Как называется?</h1>
-          <input
-            className="fm-wizard-input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="SILK REPAIR"
-            autoFocus
-          />
-          <input
-            className="fm-wizard-input"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="320 000"
-            inputMode="numeric"
-          />
-          <Button mode="filled" size="l" stretched disabled={!name.trim()} onClick={next}>
+          <h1 className="fm-wizard-title">Какой товар продаём?</h1>
+          <div className="fm-catalog-list">
+            {products.map((product) => (
+              <button
+                key={product.id}
+                type="button"
+                className={`fm-catalog-row fm-tap${selectedProductId === product.id ? ' fm-media-tile--active' : ''}`}
+                onClick={() => { setSelectedProductId(product.id); haptic('selection'); }}
+              >
+                <div className="fm-catalog-thumb"><ProductPreview product={product} size="sm" /></div>
+                <div className="fm-catalog-copy">
+                  <span className="fm-catalog-title">{product.name}</span>
+                  <span className="fm-catalog-sub">{formatPrice(product.price || 0)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          <Button mode="filled" size="l" stretched disabled={!selectedProductId} onClick={next}>
             Далее →
           </Button>
         </section>
       )}
 
-      {step === 2 && (
+      {step === 1 && !isLaunch && (
+        <section className="fm-wizard-step">
+          <h1 className="fm-wizard-title">Как называется?</h1>
+          <input className="fm-wizard-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="SILK REPAIR" autoFocus />
+          <input className="fm-wizard-input" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="320 000" inputMode="numeric" />
+          <Button mode="filled" size="l" stretched disabled={!name.trim()} onClick={next}>Далее →</Button>
+        </section>
+      )}
+
+      {step === 2 && !isLaunch && (
         <section className="fm-wizard-step">
           <h1 className="fm-wizard-title">Как выглядит?</h1>
-          <div className="fm-wizard-preview">
-            <ProductPreview product={previewProduct} size="md" />
-          </div>
+          <div className="fm-wizard-preview"><ProductPreview product={previewProduct} size="md" /></div>
           <div className="fm-media-grid fm-media-grid--wizard">
             {PRODUCT_MODELS.map((model) => (
               <button
@@ -136,22 +157,16 @@ export function WizardPage({ snapshot, onSnapshotChange, onComplete }) {
                 e.target.value = '';
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = () => {
-                  setImageData(String(reader.result));
-                  setMediaType('images');
-                  haptic('selection');
-                };
+                reader.onload = () => { setImageData(String(reader.result)); setMediaType('images'); haptic('selection'); };
                 reader.readAsDataURL(file);
               }}
             />
           </label>
-          <Button mode="filled" size="l" stretched onClick={next}>
-            Далее →
-          </Button>
+          <Button mode="filled" size="l" stretched onClick={next}>Далее →</Button>
         </section>
       )}
 
-      {step === 3 && (
+      {((isLaunch && step === 2) || (!isLaunch && step === 3)) && (
         <section className="fm-wizard-step">
           <h1 className="fm-wizard-title">Когда старт?</h1>
           <div className="fm-wizard-datetime">

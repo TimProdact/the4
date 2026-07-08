@@ -1,3 +1,49 @@
+export const PLATFORM_LABELS = {
+  instagram: 'Instagram',
+  telegram: 'Telegram',
+  tiktok: 'TikTok',
+  youtube: 'YouTube',
+  twitter: 'X / Twitter',
+  website: 'Сайт',
+};
+
+export const FIXED_SOCIAL_PLATFORMS = [
+  'instagram',
+  'telegram',
+  'tiktok',
+  'youtube',
+  'twitter',
+  'website',
+];
+
+export function normalizeSocialLinks(links = []) {
+  const byPlatform = new Map();
+  for (const link of links || []) {
+    if (link?.platform && !byPlatform.has(link.platform)) {
+      byPlatform.set(link.platform, link);
+    }
+  }
+  return FIXED_SOCIAL_PLATFORMS.map((platform, index) => {
+    const existing = byPlatform.get(platform);
+    return {
+      id: existing?.id || `social_${platform}`,
+      platform,
+      url: existing?.url || '',
+      visible: existing?.visible !== false,
+      clicks: Number(existing?.clicks) || 0,
+      sort_order: index,
+      title: existing?.title || '',
+    };
+  });
+}
+
+export function formatLinkClicks(n) {
+  const v = Number(n) || 0;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (v >= 1000) return `${(v / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(v);
+}
+
 export function formatPrice(n, currency = 'UZS') {
   return `${Number(n).toLocaleString('ru-RU')} ${currency}`;
 }
@@ -52,7 +98,9 @@ export function formatDropTimeOnly(iso) {
 export function needsOnboarding(snapshot) {
   if (!snapshot) return false;
   if (snapshot.onboardingComplete === false) return true;
-  return !String(snapshot.product?.name || '').trim();
+  const products = snapshot.products || [];
+  if (!products.length) return true;
+  return !String(products[0]?.name || '').trim();
 }
 
 export function vitrinaUrl() {
@@ -67,13 +115,11 @@ export function pendingOrders(orders = []) {
   return orders.filter(o => o.status === 'pending');
 }
 
-export function todayMetrics(orders = []) {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const today = orders.filter(o => new Date(o.createdAt) >= start);
-  const paid = today.filter(o => o.status === 'paid');
-  return {
-    todayOrders: today.length,
-    todayRevenue: paid.reduce((a, o) => a + Number(o.amount || 0), 0),
-  };
+export function productThumb(product = {}) {
+  if (product.mediaType === 'images' && product.images?.[0]) return product.images[0];
+  return '';
+}
+
+export function productAcronym(product = {}) {
+  return String(product.name || '?').trim().charAt(0).toUpperCase() || '?';
 }

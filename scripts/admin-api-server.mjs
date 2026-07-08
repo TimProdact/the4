@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateInitData } from '../bot/telegram-auth.mjs';
-import { getSnapshot, getPublicDrop, runAction, runPublicAction } from './bot-store.mjs';
+import { getSnapshot, getPublicDrop, getPublicStorefront, runAction, runPublicAction } from './bot-store.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -97,8 +97,18 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'GET' && path === '/drop') {
     try {
-      const vip = new URL(req.url || '', 'http://local').searchParams.get('vip') === '1';
-      return send(res, 200, getPublicDrop(vip));
+      const url = new URL(req.url || '', 'http://local');
+      const vip = url.searchParams.get('vip') === '1';
+      const dropId = url.searchParams.get('dropId') || undefined;
+      return send(res, 200, getPublicDrop(vip, dropId));
+    } catch (e) {
+      return send(res, 500, { error: e.message || 'Server error' });
+    }
+  }
+
+  if (req.method === 'GET' && path === '/storefront') {
+    try {
+      return send(res, 200, getPublicStorefront());
     } catch (e) {
       return send(res, 500, { error: e.message || 'Server error' });
     }

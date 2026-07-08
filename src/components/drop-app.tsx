@@ -15,6 +15,7 @@ import { ActiveDropScreen } from "./active-drop-screen";
 
 interface DropAppProps {
   initial: DropSnapshot;
+  dropId?: string | null;
 }
 
 const VIP_KEY = "the4_vip";
@@ -32,16 +33,18 @@ function DropScreens({
   initial,
   checkoutPreview,
   themeId,
+  dropId,
 }: {
   initial: DropSnapshot;
   checkoutPreview?: CheckoutPreview;
   themeId?: string | null;
+  dropId?: string | null;
 }) {
   const { preview } = usePreview();
   const [vip, setVip] = useState(false);
   const [dropStarted, setDropStarted] = useState(false);
   const [prefill, setPrefill] = useState<{ name?: string; phone?: string }>({});
-  const snap = useDropStream(initial);
+  const snap = useDropStream(initial, dropId);
   const now = useNow(1000);
 
   useEffect(() => {
@@ -107,7 +110,7 @@ function DropScreens({
   );
 }
 
-export function DropApp({ initial }: DropAppProps) {
+export function DropApp({ initial, dropId = null }: DropAppProps) {
   const [boot, setBoot] = useState<{
     preview: DropPreview | null;
     themeId: string | null;
@@ -132,6 +135,7 @@ export function DropApp({ initial }: DropAppProps) {
         initial={initial}
         checkoutPreview={boot.checkout ?? undefined}
         themeId={boot.themeId}
+        dropId={dropId}
       />
     </PreviewProvider>
   );

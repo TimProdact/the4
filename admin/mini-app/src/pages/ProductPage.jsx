@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader, SubpageLayout } from '../components/PageLayout.jsx';
 import { InsetSection } from '../components/InsetSection.jsx';
 import { ProductPreview } from '../components/ProductPreview.jsx';
@@ -15,8 +15,12 @@ const FIELDS = {
   price: 'price',
 };
 
-export function ProductPage({ snapshot, onSnapshotChange, push }) {
-  const product = snapshot.product || {};
+export function ProductPage({ snapshot, onSnapshotChange, push, productId }) {
+  const product = useMemo(() => {
+    const list = snapshot.products || [];
+    return list.find((p) => p.id === productId) || list[0] || snapshot.product || {};
+  }, [snapshot, productId]);
+
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,7 +28,7 @@ export function ProductPage({ snapshot, onSnapshotChange, push }) {
     if (busy) return;
     setBusy(true);
     try {
-      const next = await runActionSafe('update_product', { product: patch });
+      const next = await runActionSafe('update_product', { productId: product.id, product: patch });
       onSnapshotChange(next);
     } finally {
       setBusy(false);
@@ -55,56 +59,21 @@ export function ProductPage({ snapshot, onSnapshotChange, push }) {
         </div>
 
         <div className="fm-inset-card fm-value-group">
-          <ValueRow
-            label="Название"
-            value={product.name || '—'}
-            onClick={() => openField(FIELDS.name)}
-          />
-          <ValueRow
-            label="Подзаголовок"
-            value={product.edition || '—'}
-            onClick={() => openField(FIELDS.edition)}
-          />
-          <ValueRow
-            label="Цена"
-            value={formatPrice(product.price || 0)}
-            onClick={() => openField(FIELDS.price)}
-          />
+          <ValueRow label="Название" value={product.name || '—'} onClick={() => openField(FIELDS.name)} />
+          <ValueRow label="Подзаголовок" value={product.edition || '—'} onClick={() => openField(FIELDS.edition)} />
+          <ValueRow label="Цена" value={formatPrice(product.price || 0)} onClick={() => openField(FIELDS.price)} />
           <ValueRow
             label="Картинка"
             value={mediaSummary(product)}
-            onClick={() => push(SCREENS.PRODUCT_MEDIA)}
+            onClick={() => push(SCREENS.PRODUCT_MEDIA, { productId: product.id })}
             last
           />
         </div>
       </InsetSection>
 
-      <FieldSheet
-        open={sheet === FIELDS.name}
-        title="Название"
-        value={product.name}
-        placeholder="SILK REPAIR"
-        onClose={closeSheet}
-        onSave={handleSave}
-      />
-      <FieldSheet
-        open={sheet === FIELDS.edition}
-        title="Подзаголовок"
-        value={product.edition}
-        placeholder="Face Cream · 1st Drop"
-        onClose={closeSheet}
-        onSave={handleSave}
-      />
-      <FieldSheet
-        open={sheet === FIELDS.price}
-        title="Цена"
-        value={String(product.price || '')}
-        type="number"
-        inputMode="numeric"
-        placeholder="320000"
-        onClose={closeSheet}
-        onSave={handleSave}
-      />
+      <FieldSheet open={sheet === FIELDS.name} title="Название" value={product.name} placeholder="SILK REPAIR" onClose={closeSheet} onSave={handleSave} />
+      <FieldSheet open={sheet === FIELDS.edition} title="Подзаголовок" value={product.edition} placeholder="Face Cream · 1st Drop" onClose={closeSheet} onSave={handleSave} />
+      <FieldSheet open={sheet === FIELDS.price} title="Цена" value={String(product.price || '')} type="number" inputMode="numeric" placeholder="320000" onClose={closeSheet} onSave={handleSave} />
     </SubpageLayout>
   );
 }

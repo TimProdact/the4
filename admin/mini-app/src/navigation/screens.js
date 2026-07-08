@@ -1,12 +1,15 @@
 export const SCREENS = {
   HUB: 'hub',
   WIZARD: 'wizard',
+  CATALOG: 'catalog',
   PRODUCT: 'product',
   PRODUCT_MEDIA: 'product-media',
+  DROPS: 'drops',
   DROP: 'drop',
   ORDERS: 'orders',
   ORDER_DETAIL: 'order-detail',
   WAITLIST: 'waitlist',
-  STORE_EDIT: 'store-edit',
+  STOREFRONT_EDIT: 'storefront-edit',
+  SOCIALS: 'socials',
   STORE_QR: 'store-qr',
 };
