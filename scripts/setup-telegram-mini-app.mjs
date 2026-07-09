@@ -34,6 +34,11 @@ const miniAppUrl =
   process.argv[2] ||
   process.env.THE4_MINI_APP_URL ||
   'https://timprodact.github.io/the4/admin/mini-app-dist/';
+const apiUrl =
+  process.env.THE4_API_URL ||
+  (existsSync(join(ROOT, '.the4-api-url')) ? readFileSync(join(ROOT, '.the4-api-url'), 'utf8').trim() : '') ||
+  'https://the4-admin-api.onrender.com';
+const webhookUrl = `${apiUrl.replace(/\/$/, '')}/telegram/webhook`;
 
 if (!token) {
   console.error('TELEGRAM_BOT_TOKEN не задан в .env');
@@ -74,6 +79,13 @@ await tg('setMyCommands', {
   ],
 });
 console.log('→ Commands updated');
+
+try {
+  await tg('setWebhook', { url: webhookUrl, allowed_updates: ['message'] });
+  console.log('→ Webhook:', webhookUrl);
+} catch (err) {
+  console.warn('setWebhook:', err.message);
+}
 
 console.log(`
 ✅ Готово. Открой @${me.username} → кнопка «Админка» внизу.

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@telegram-apps/telegram-ui';
 import { PageHeader, SubpageLayout } from '../components/PageLayout.jsx';
-import { InsetSection } from '../components/InsetSection.jsx';
 import { BottomSheet } from '../components/BottomSheet.jsx';
-import { ValueRow, SwitchRow } from '../components/ValueRow.jsx';
+import { ValueGroup } from '../components/ValueGroup.jsx';
+import { ValueRow, StepperRow, SwitchRow } from '../components/ValueRow.jsx';
 import { formatDropDateOnly, formatDropTimeOnly, phaseLabel, vitrinaUrl } from '../utils.js';
 import { haptic, runActionSafe } from '../api.js';
 
@@ -90,28 +90,33 @@ export function DropPage({ snapshot, onSnapshotChange, dropId }) {
   return (
     <SubpageLayout>
       <PageHeader title="Дроп" subtitle={drop.productName || drop.product?.name || 'Продажа'} />
-      <InsetSection>
-        <div className="fm-inset-card fm-value-group">
+      <div className="fm-page-body">
+        <ValueGroup>
           <ValueRow label="Статус" value={phaseLabel(drop.phase, drop.paused)} muted />
           <ValueRow label="Дата старта" value={formatDropDateOnly(drop.startsAt)} onClick={openDate} />
           <ValueRow label="Время старта" value={formatDropTimeOnly(drop.startsAt)} onClick={openTime} />
-          <div className="fm-value-row fm-value-row--static fm-value-row--stepper">
-            <span className="fm-value-row-label">В наличии</span>
-            <div className="fm-stepper">
-              <button type="button" className="fm-stepper-btn" disabled={busy || drop.stock <= 0} onClick={() => bumpStock(-1)}>−</button>
-              <span className="fm-stepper-value">{drop.stock} шт</span>
-              <button type="button" className="fm-stepper-btn" disabled={busy || drop.stock >= drop.totalStock} onClick={() => bumpStock(1)}>+</button>
-            </div>
-          </div>
-          <SwitchRow label="Пауза" checked={Boolean(drop.paused)} onChange={(paused) => act('set_paused', { paused })} last />
-        </div>
+          <StepperRow
+            label="В наличии"
+            value={`${drop.stock} шт`}
+            decrementDisabled={busy || drop.stock <= 0}
+            incrementDisabled={busy || drop.stock >= drop.totalStock}
+            onDecrement={() => bumpStock(-1)}
+            onIncrement={() => bumpStock(1)}
+          />
+          <SwitchRow
+            label="Пауза"
+            checked={Boolean(drop.paused)}
+            onChange={(paused) => act('set_paused', { paused })}
+            last
+          />
+        </ValueGroup>
 
-        <div className="fm-page-cta">
+        <div className="fm-page-cta fm-page-cta--separated">
           <Button mode="filled" size="l" stretched onClick={openVitrina}>
             Посмотреть витрину
           </Button>
         </div>
-      </InsetSection>
+      </div>
 
       <BottomSheet open={sheet === 'date'} title="Дата старта" onClose={() => setSheet(null)}>
         <div className="fm-field-sheet">

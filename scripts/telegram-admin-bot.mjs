@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getSnapshot, runAction } from "./bot-store.mjs";
+import { getSnapshot, grantAdminId, isAdminId, runAction } from "./bot-store.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -9,7 +9,7 @@ const AUTH_PATH = join(ROOT, "data", "telegram-admin-chats.json");
 const ADMIN_IDS_PATH = join(ROOT, "data", "admin-telegram-ids.json");
 const ADMIN_URL = "https://timprodact.github.io/the4/admin/";
 const MINI_APP_URL = process.env.THE4_MINI_APP_URL || "https://timprodact.github.io/the4/admin/mini-app-dist/";
-const API_URL = process.env.THE4_API_URL || "https://the4-admin-api.timprodact.workers.dev";
+const API_URL = process.env.THE4_API_URL || "https://the4-admin-api.onrender.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "THE4ADMIN";
 
 function loadEnvFile() {
@@ -75,23 +75,8 @@ async function tg(method, body) {
   return data.result;
 }
 
-function saveAdminId(userId) {
-  mkdirSync(dirname(ADMIN_IDS_PATH), { recursive: true });
-  let ids = [];
-  if (existsSync(ADMIN_IDS_PATH)) {
-    try {
-      ids = JSON.parse(readFileSync(ADMIN_IDS_PATH, "utf8"));
-    } catch {}
-  }
-  const id = String(userId);
-  if (!ids.includes(id)) {
-    ids.push(id);
-    writeFileSync(ADMIN_IDS_PATH, JSON.stringify(ids, null, 2));
-  }
-}
-
 async function grantAdminApi(telegramId) {
-  saveAdminId(telegramId);
+  grantAdminId(telegramId);
   try {
     await fetch(API_URL, {
       method: "POST",
@@ -165,8 +150,8 @@ function helpText() {
   ].join("\n");
 }
 
-function isAuthed(chatId) {
-  return authorized.has(chatId);
+function isAuthed(userId) {
+  return isAdminId(userId);
 }
 
 function miniAppKeyboard() {
@@ -182,10 +167,10 @@ async function handleCommand(chatId, userId, text) {
   const lower = cmd.toLowerCase();
 
   if (lower === "/start" || lower === "/admin") {
-    const authed = isAuthed(chatId);
+    const authed = isAuthed(userId);
     const body = authed
       ? `🐱 <b>THE4 Admin</b>\n\n${fmtSnapshot(getSnapshot())}\n\nНажми кнопку ниже или «Админка» в меню.`
-      : `🐱 <b>THE4 Admin Bot</b>\n\nТвой id: <code>${userId}</code>\n\nДля Mini App сначала:\n<code>/login ${ADMIN_PASSWORD}</code>`;
+      : `🐱 <b>Pocket Pals</b>\n\nТвой Telegram ID: <code>${userId}</code>\n\nДля админки отправь:\n<code>/login ${ADMIN_PASSWORD}</code>`;
     await send(chatId, body, { reply_markup: miniAppKeyboard() });
     return;
   }
@@ -196,17 +181,15 @@ async function handleCommand(chatId, userId, text) {
       await send(chatId, "❌ Неверный пароль");
       return;
     }
-    authorized.add(chatId);
-    saveAuth(authorized);
     await grantAdminApi(userId);
-    await send(chatId, `✅ Вход выполнен\n\n${fmtSnapshot(getSnapshot())}\n\nОткрой Mini App:`, {
+    await send(chatId, `✅ Доступ открыт\n\n${fmtSnapshot(getSnapshot())}\n\nОткрой Mini App:`, {
       reply_markup: miniAppKeyboard(),
     });
     return;
   }
 
-  if (!isAuthed(chatId)) {
-    await send(chatId, `🔒 Сначала войди: <code>/login ${ADMIN_PASSWORD}</code>`);
+  if (!isAuthed(userId)) {
+    await send(chatId, `🔒 Сначала войди:\n<code>/login ${ADMIN_PASSWORD}</code>\n\nТвой ID: <code>${userId}</code>`);
     return;
   }
 

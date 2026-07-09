@@ -73,8 +73,8 @@ export function SocialsPage({ snapshot, onSnapshotChange }) {
   return (
     <SubpageLayout>
       <PageHeader title="Ссылки" subtitle={`${filledCount} из ${FIXED_SOCIAL_PLATFORMS.length}`} />
-      <div className="fm-manage-page-list">
-        <div className="fm-manage-list fm-manage-list--inset">
+      <div className="fm-page-body">
+        <div className="fm-inset-card fm-manage-list fm-manage-list--inset">
           {links.map((link) => (
             <ManageItemCard
               key={link.platform}

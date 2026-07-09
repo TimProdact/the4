@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export function BottomSheet({ open, title, onClose, children }) {
+export function BottomSheet({ open, title, subtitle, onClose, children, className = '' }) {
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -13,9 +13,14 @@ export function BottomSheet({ open, title, onClose, children }) {
   return (
     <div className="fm-sheet-root" role="presentation" onClick={onClose}>
       <div className="fm-sheet-backdrop" />
-      <div className="fm-sheet-panel" role="dialog" aria-modal onClick={e => e.stopPropagation()}>
+      <div className={`fm-sheet-panel ${className}`.trim()} role="dialog" aria-modal onClick={(e) => e.stopPropagation()}>
         <div className="fm-sheet-handle" />
-        {title && <div className="fm-sheet-title">{title}</div>}
+        {title ? (
+          <div className="fm-sheet-header">
+            <div className="fm-sheet-title">{title}</div>
+            {subtitle ? <div className="fm-sheet-subtitle">{subtitle}</div> : null}
+          </div>
+        ) : null}
         <div className="fm-sheet-body">{children}</div>
       </div>
     </div>

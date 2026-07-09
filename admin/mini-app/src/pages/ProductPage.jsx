@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PageHeader, SubpageLayout } from '../components/PageLayout.jsx';
-import { InsetSection } from '../components/InsetSection.jsx';
 import { ProductPreview } from '../components/ProductPreview.jsx';
 import { FieldSheet } from '../components/FieldSheet.jsx';
+import { ValueGroup } from '../components/ValueGroup.jsx';
 import { ValueRow } from '../components/ValueRow.jsx';
 import { formatPrice } from '../utils.js';
 import { mediaSummary } from '../config/productModels.js';
@@ -15,14 +15,25 @@ const FIELDS = {
   price: 'price',
 };
 
-export function ProductPage({ snapshot, onSnapshotChange, push, productId }) {
-  const product = useMemo(() => {
-    const list = snapshot.products || [];
-    return list.find((p) => p.id === productId) || list[0] || snapshot.product || {};
-  }, [snapshot, productId]);
+function listProducts(snapshot) {
+  if (snapshot.products?.length) return snapshot.products;
+  if (snapshot.product?.id) return [snapshot.product];
+  return [];
+}
+
+export function ProductPage({ snapshot, onSnapshotChange, push, productId, autoOpenField }) {
+  const products = listProducts(snapshot);
+  const product = useMemo(
+    () => products.find((p) => p.id === productId) || products[0] || {},
+    [products, productId],
+  );
 
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (autoOpenField) setSheet(autoOpenField);
+  }, [autoOpenField, product.id]);
 
   const saveProduct = async (patch) => {
     if (busy) return;
@@ -40,7 +51,9 @@ export function ProductPage({ snapshot, onSnapshotChange, push, productId }) {
 
   const handleSave = async (raw) => {
     if (sheet === FIELDS.name) {
-      await saveProduct({ name: raw.trim() });
+      const name = raw.trim();
+      if (!name) throw new Error('Введите название');
+      await saveProduct({ name });
     } else if (sheet === FIELDS.edition) {
       await saveProduct({ edition: raw.trim() });
     } else if (sheet === FIELDS.price) {
@@ -53,27 +66,27 @@ export function ProductPage({ snapshot, onSnapshotChange, push, productId }) {
   return (
     <SubpageLayout>
       <PageHeader title="Товар" subtitle="Контент витрины" />
-      <InsetSection>
+      <div className="fm-page-body">
         <div className="fm-product-hero">
           <ProductPreview product={product} size="lg" />
         </div>
 
-        <div className="fm-inset-card fm-value-group">
+        <ValueGroup>
           <ValueRow label="Название" value={product.name || '—'} onClick={() => openField(FIELDS.name)} />
           <ValueRow label="Подзаголовок" value={product.edition || '—'} onClick={() => openField(FIELDS.edition)} />
-          <ValueRow label="Цена" value={formatPrice(product.price || 0)} onClick={() => openField(FIELDS.price)} />
+          <ValueRow label="Цена" value={product.price ? formatPrice(product.price) : '—'} onClick={() => openField(FIELDS.price)} />
           <ValueRow
             label="Картинка"
             value={mediaSummary(product)}
             onClick={() => push(SCREENS.PRODUCT_MEDIA, { productId: product.id })}
             last
           />
-        </div>
-      </InsetSection>
+        </ValueGroup>
+      </div>
 
       <FieldSheet open={sheet === FIELDS.name} title="Название" value={product.name} placeholder="SILK REPAIR" onClose={closeSheet} onSave={handleSave} />
       <FieldSheet open={sheet === FIELDS.edition} title="Подзаголовок" value={product.edition} placeholder="Face Cream · 1st Drop" onClose={closeSheet} onSave={handleSave} />
-      <FieldSheet open={sheet === FIELDS.price} title="Цена" value={String(product.price || '')} type="number" inputMode="numeric" placeholder="320000" onClose={closeSheet} onSave={handleSave} />
+      <FieldSheet open={sheet === FIELDS.price} title="Цена" value={product.price ? String(product.price) : ''} type="number" inputMode="numeric" placeholder="320000" onClose={closeSheet} onSave={handleSave} />
     </SubpageLayout>
   );
 }

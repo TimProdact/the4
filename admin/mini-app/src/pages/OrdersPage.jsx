@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { List, Section, Cell, SegmentedControl } from '@telegram-apps/telegram-ui';
+import { SegmentedControl } from '@telegram-apps/telegram-ui';
 import { Icon24ChevronRight } from '@telegram-apps/telegram-ui/dist/icons/24/chevron_right';
 import { PageHeader, SubpageLayout } from '../components/PageLayout.jsx';
-import { InsetSection } from '../components/InsetSection.jsx';
 import { formatPrice, orderStatusLabel } from '../utils.js';
 import { haptic } from '../api.js';
 import { SCREENS } from '../navigation/screens.js';
@@ -19,8 +18,8 @@ export function OrdersPage({ snapshot, push }) {
   return (
     <SubpageLayout>
       <PageHeader title="Заказы" subtitle={`${orders.length} всего`} />
-      <InsetSection>
-        <div className="fm-segment-wrap">
+      <div className="fm-page-body">
+        <div className="fm-segment-wrap fm-segment-wrap--media">
           <SegmentedControl>
             <SegmentedControl.Item
               selected={filter === 'new'}
@@ -36,24 +35,30 @@ export function OrdersPage({ snapshot, push }) {
             </SegmentedControl.Item>
           </SegmentedControl>
         </div>
-        <List>
-          <Section>
-            {filtered.map((o) => (
-              <Cell
-                key={o.id}
-                onClick={() => push(SCREENS.ORDER_DETAIL, { orderId: o.id })}
-                subtitle={`${o.buyer?.phone || '—'} · ${formatPrice(o.amount)}`}
-                description={orderStatusLabel(o.status)}
-                after={<Icon24ChevronRight />}
-                multiline
+
+        {filtered.length > 0 ? (
+          <div className="fm-inset-card fm-value-group">
+            {filtered.map((order, index) => (
+              <button
+                key={order.id}
+                type="button"
+                className={`fm-value-row fm-value-row--chevron fm-tap${index === filtered.length - 1 ? ' fm-value-row--last' : ''}`}
+                onClick={() => { haptic('selection'); push(SCREENS.ORDER_DETAIL, { orderId: order.id }); }}
               >
-                🧾 {o.receipt} · {orderStatusLabel(o.status)}
-              </Cell>
+                <span className="fm-value-row-label">{order.receipt}</span>
+                <span className="fm-value-row-value">
+                  {formatPrice(order.amount)} · {orderStatusLabel(order.status)}
+                </span>
+                <Icon24ChevronRight className="fm-value-row-chevron" />
+              </button>
             ))}
-            {!filtered.length && <Cell subtitle="Нет заказов">Пусто</Cell>}
-          </Section>
-        </List>
-      </InsetSection>
+          </div>
+        ) : (
+          <p className="fm-empty-hint">
+            {filter === 'new' ? 'Новых заказов нет' : 'Заказов пока нет'}
+          </p>
+        )}
+      </div>
     </SubpageLayout>
   );
 }

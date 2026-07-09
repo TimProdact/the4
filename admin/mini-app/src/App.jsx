@@ -5,9 +5,7 @@ import { useTelegramApp } from './hooks/useTelegramApp.js';
 import { useNavStack } from './hooks/useNavStack.js';
 import { waitForInitData, hasTelegramContext } from './telegram-init.js';
 import { SCREENS } from './navigation/screens.js';
-import { needsOnboarding } from './utils.js';
 import { HubPage } from './pages/HubPage.jsx';
-import { WizardPage } from './pages/WizardPage.jsx';
 import { CatalogPage } from './pages/CatalogPage.jsx';
 import { ProductPage } from './pages/ProductPage.jsx';
 import { ProductMediaPage } from './pages/ProductMediaPage.jsx';
@@ -17,6 +15,7 @@ import { OrdersPage } from './pages/OrdersPage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { WaitlistPage } from './pages/WaitlistPage.jsx';
 import { StorefrontEditPage } from './pages/StorefrontEditPage.jsx';
+import { StorefrontLogoPage } from './pages/StorefrontLogoPage.jsx';
 import { SocialsPage } from './pages/SocialsPage.jsx';
 import { QrPage } from './pages/QrPage.jsx';
 import { HubSkeleton } from './components/HubSkeleton.jsx';
@@ -49,7 +48,7 @@ export default function App() {
       setLoadingHint('Подключаемся к серверу…');
       const data = await bootstrap();
       setSnapshot(data.snapshot);
-      reset(needsOnboarding(data.snapshot) ? SCREENS.WIZARD : SCREENS.HUB);
+      reset(SCREENS.HUB);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -61,12 +60,18 @@ export default function App() {
     if (ready) load();
   }, [ready, load]);
 
+  // Каждый раз при открытии Mini App из Telegram — главный экран, не wizard.
+  useEffect(() => {
+    if (!tg?.onEvent) return undefined;
+    const onVisible = (event) => {
+      if (event?.is_visible) reset(SCREENS.HUB);
+    };
+    tg.onEvent('visibility_changed', onVisible);
+    return () => tg.offEvent?.('visibility_changed', onVisible);
+  }, [tg, reset]);
+
   useEffect(() => {
     if (!tg?.BackButton) return;
-    if (current.id === SCREENS.WIZARD) {
-      tg.BackButton.hide();
-      return;
-    }
     if (depth > 1) {
       tg.BackButton.show();
       const handler = () => {
@@ -77,7 +82,7 @@ export default function App() {
       return () => { tg.BackButton.offClick(handler); tg.BackButton.hide(); };
     }
     tg.BackButton.hide();
-  }, [depth, tg, pop, current.id]);
+  }, [depth, tg, pop]);
 
   const findOrder = (id) => snapshot?.orders?.find(o => o.id === Number(id));
 
@@ -87,15 +92,6 @@ export default function App() {
     switch (id) {
       case SCREENS.HUB:
         return <HubPage snapshot={snapshot} push={push} />;
-      case SCREENS.WIZARD:
-        return (
-          <WizardPage
-            snapshot={snapshot}
-            onSnapshotChange={setSnapshot}
-            onComplete={() => reset(SCREENS.HUB)}
-            launchOnly={Boolean(params.launchOnly)}
-          />
-        );
       case SCREENS.CATALOG:
         return <CatalogPage snapshot={snapshot} onSnapshotChange={setSnapshot} push={push} />;
       case SCREENS.PRODUCT:
@@ -105,6 +101,7 @@ export default function App() {
             onSnapshotChange={setSnapshot}
             push={push}
             productId={params.productId}
+            autoOpenField={params.autoOpenField}
           />
         );
       case SCREENS.PRODUCT_MEDIA:
@@ -120,10 +117,8 @@ export default function App() {
         return (
           <DropsListPage
             snapshot={snapshot}
-            push={(screen, p = {}) => {
-              if (screen === SCREENS.WIZARD) push(SCREENS.WIZARD, { launchOnly: true });
-              else push(screen, p);
-            }}
+            onSnapshotChange={setSnapshot}
+            push={push}
           />
         );
       case SCREENS.DROP:
@@ -150,8 +145,15 @@ export default function App() {
           <StorefrontEditPage
             snapshot={snapshot}
             onSnapshotChange={setSnapshot}
-            onDone={pop}
             push={push}
+          />
+        );
+      case SCREENS.STOREFRONT_LOGO:
+        return (
+          <StorefrontLogoPage
+            snapshot={snapshot}
+            onSnapshotChange={setSnapshot}
+            onDone={pop}
           />
         );
       case SCREENS.SOCIALS:
@@ -181,12 +183,11 @@ export default function App() {
     );
   }
 
-  const isWizard = current.id === SCREENS.WIZARD;
   const isQr = current.id === SCREENS.STORE_QR;
 
   return (
     <AppRoot appearance={appearance} platform={platform}>
-      <div className={`fm-twa fm-scroll fm-scroll--hub${depth > 1 && !isQr ? ' fm-subpage' : ''}${isWizard ? ' fm-scroll--wizard' : ''}`}>
+      <div className={`fm-twa fm-scroll fm-scroll--hub${depth > 1 && !isQr ? ' fm-subpage' : ''}`}>
         {renderScreen()}
       </div>
     </AppRoot>

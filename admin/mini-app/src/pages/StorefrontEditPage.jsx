@@ -1,121 +1,113 @@
-import { useEffect, useState } from 'react';
-import { Button } from '@telegram-apps/telegram-ui';
+import { useMemo, useState } from 'react';
 import { PageHeader, SubpageLayout } from '../components/PageLayout.jsx';
-import { InsetSection } from '../components/InsetSection.jsx';
-import { SocialNetworksCard } from '../components/SocialNetworksCard.jsx';
-import { haptic, runActionSafe } from '../api.js';
+import { FieldSheet } from '../components/FieldSheet.jsx';
+import { ValueGroup } from '../components/ValueGroup.jsx';
+import { ValueRow } from '../components/ValueRow.jsx';
+import { runActionSafe } from '../api.js';
+import { FIXED_SOCIAL_PLATFORMS, normalizeSocialLinks } from '../utils.js';
 import { SCREENS } from '../navigation/screens.js';
 
-const LOGO_EMOJIS = ['🐱', '💄', '✨', '🌸', '🧴', '💎', '🦋', '🌙'];
+const FIELDS = {
+  name: 'name',
+  bio: 'bio',
+};
 
-export function StorefrontEditPage({ snapshot, onSnapshotChange, onDone, push }) {
-  const storefront = snapshot.storefront || snapshot.brand || {};
-  const socialLinks = snapshot.socialLinks || storefront.socialLinks || [];
-  const [displayName, setDisplayName] = useState(storefront.displayName || storefront.name || '');
-  const [bio, setBio] = useState(storefront.bio || '');
-  const [avatarUrl, setAvatarUrl] = useState(storefront.avatarUrl || storefront.logoUrl || '');
-  const [logoEmoji, setLogoEmoji] = useState(storefront.logoEmoji || '🐱');
+function storefrontOf(snapshot) {
+  return snapshot.storefront || snapshot.brand || {};
+}
+
+function logoSummary(sf) {
+  if (sf.avatarUrl) return 'Фото';
+  return sf.logoEmoji || '🐱';
+}
+
+export function StorefrontEditPage({ snapshot, onSnapshotChange, push }) {
+  const sf = useMemo(() => storefrontOf(snapshot), [snapshot]);
+  const socialCount = normalizeSocialLinks(snapshot.socialLinks).filter((l) => l.url?.trim()).length;
+  const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const sf = snapshot.storefront || snapshot.brand || {};
-    setDisplayName(sf.displayName || sf.name || '');
-    setBio(sf.bio || '');
-    setAvatarUrl(sf.avatarUrl || sf.logoUrl || '');
-    setLogoEmoji(sf.logoEmoji || '🐱');
-  }, [snapshot]);
-
-  const save = async () => {
+  const saveField = async (patch) => {
     if (busy) return;
     setBusy(true);
     try {
-      const next = await runActionSafe('update_storefront', {
-        storefront: {
-          displayName: displayName.trim(),
-          bio: bio.trim(),
-          avatarUrl: avatarUrl.trim(),
-          logoEmoji,
-        },
-      });
+      const next = await runActionSafe('update_storefront', { storefront: patch });
       onSnapshotChange(next);
-      haptic('success');
-      onDone?.();
     } finally {
       setBusy(false);
     }
   };
 
+  const handleSave = async (raw) => {
+    if (sheet === FIELDS.name) {
+      const displayName = raw.trim();
+      if (!displayName) throw new Error('Введите название');
+      await saveField({ displayName });
+    } else if (sheet === FIELDS.bio) {
+      await saveField({ bio: raw.trim() });
+    }
+  };
+
+  const avatarUrl = sf.avatarUrl || sf.logoUrl || '';
+  const logoEmoji = sf.logoEmoji || '🐱';
+  const displayName = sf.displayName || sf.name || '';
+
   return (
     <SubpageLayout>
       <PageHeader title="Настройки магазина" subtitle="Лого, описание, соцсети" />
-
-      <InsetSection className="fm-settings-section--flush">
-        <div className="fm-settings-card">
-          <div className="fm-settings-avatar-block">
-            <div className="fm-settings-avatar-ring">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="fm-settings-avatar-img" />
-              ) : (
-                <span className="fm-settings-avatar-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>
-                  {logoEmoji}
-                </span>
-              )}
-            </div>
+      <div className="fm-page-body">
+        <div className="fm-storefront-hero">
+          <div className="fm-storefront-hero-avatar" aria-hidden>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="fm-storefront-hero-img" />
+            ) : (
+              <span className="fm-storefront-hero-emoji">{logoEmoji}</span>
+            )}
           </div>
-
-          <label className="fm-brand-label">Логотип</label>
-          <div className="fm-brand-emoji-grid">
-            {LOGO_EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className={`fm-brand-emoji${logoEmoji === emoji && !avatarUrl ? ' fm-brand-emoji--active' : ''}`}
-                onClick={() => { setLogoEmoji(emoji); setAvatarUrl(''); haptic('selection'); }}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-
-          <label className="fm-brand-label">Или ссылка на фото</label>
-          <input
-            className="fm-brand-input"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="https://..."
-          />
-
-          <label className="fm-brand-label">Название</label>
-          <input
-            className="fm-brand-input"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="SILK REPAIR"
-          />
-
-          <label className="fm-brand-label">Описание</label>
-          <textarea
-            className="fm-brand-textarea"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Коротко о бренде и дропе"
-            rows={3}
-          />
         </div>
-      </InsetSection>
 
-      <InsetSection title="Бизнес" stacked>
-        <SocialNetworksCard
-          links={socialLinks}
-          onOpen={() => push(SCREENS.SOCIALS)}
-        />
-      </InsetSection>
-
-      <div className="fm-page-cta">
-        <Button mode="filled" size="l" stretched disabled={busy} onClick={save}>
-          Сохранить
-        </Button>
+        <ValueGroup>
+          <ValueRow
+            label="Логотип"
+            value={logoSummary(sf)}
+            onClick={() => push(SCREENS.STOREFRONT_LOGO)}
+          />
+          <ValueRow
+            label="Название"
+            value={displayName || '—'}
+            onClick={() => setSheet(FIELDS.name)}
+          />
+          <ValueRow
+            label="Описание"
+            value={sf.bio?.trim() || '—'}
+            onClick={() => setSheet(FIELDS.bio)}
+          />
+          <ValueRow
+            label="Соцсети"
+            value={`${socialCount} из ${FIXED_SOCIAL_PLATFORMS.length}`}
+            onClick={() => push(SCREENS.SOCIALS)}
+            last
+          />
+        </ValueGroup>
       </div>
+
+      <FieldSheet
+        open={sheet === FIELDS.name}
+        title="Название"
+        value={displayName}
+        placeholder="SILK REPAIR"
+        onClose={() => setSheet(null)}
+        onSave={handleSave}
+      />
+      <FieldSheet
+        open={sheet === FIELDS.bio}
+        title="Описание"
+        value={sf.bio || ''}
+        placeholder="Коротко о бренде и дропе"
+        multiline
+        onClose={() => setSheet(null)}
+        onSave={handleSave}
+      />
     </SubpageLayout>
   );
 }

@@ -95,14 +95,6 @@ export function formatDropTimeOnly(iso) {
   });
 }
 
-export function needsOnboarding(snapshot) {
-  if (!snapshot) return false;
-  if (snapshot.onboardingComplete === false) return true;
-  const products = snapshot.products || [];
-  if (!products.length) return true;
-  return !String(products[0]?.name || '').trim();
-}
-
 export function vitrinaUrl() {
   return 'https://timprodact.github.io/the4/';
 }

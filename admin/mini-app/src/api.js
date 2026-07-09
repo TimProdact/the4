@@ -87,9 +87,9 @@ export function showError(message) {
   else alert(String(message));
 }
 
-export async function runActionSafe(adminAction, payload = {}) {
+export async function runActionSafe(action, payload = {}) {
   try {
-    const data = await adminAction(adminAction, payload);
+    const data = await adminAction(action, payload);
     haptic('success');
     return data.snapshot;
   } catch (e) {

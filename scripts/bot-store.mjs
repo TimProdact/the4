@@ -261,6 +261,10 @@ function migrateStore(parsed) {
     }
   }
 
+  if (!Array.isArray(raw.adminIds)) {
+    raw.adminIds = [];
+  }
+
   return raw;
 }
 
@@ -408,6 +412,28 @@ export function getPublicStorefront() {
 
 export function getSnapshot() {
   return buildSnapshot(loadStore());
+}
+
+export function getAdminIds() {
+  const fromEnv = (process.env.TELEGRAM_ADMIN_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const store = loadStore();
+  const fromStore = Array.isArray(store.adminIds) ? store.adminIds.map(String) : [];
+  return new Set([...fromEnv, ...fromStore]);
+}
+
+export function isAdminId(telegramId) {
+  return getAdminIds().has(String(telegramId));
+}
+
+export function grantAdminId(telegramId) {
+  const store = loadStore();
+  const id = String(telegramId);
+  store.adminIds = Array.isArray(store.adminIds) ? store.adminIds.map(String) : [];
+  if (!store.adminIds.includes(id)) {
+    store.adminIds.push(id);
+    saveStore(store);
+  }
+  return id;
 }
 
 export function runPublicAction(action, payload = {}) {

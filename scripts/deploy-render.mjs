@@ -146,6 +146,20 @@ async function deployViaApi() {
 
 function deployViaCli() {
   if (!TOKEN) throw new Error('TELEGRAM_BOT_TOKEN не задан в .env');
+  try {
+    const out = execSync('render services list -o json', { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const list = JSON.parse(out);
+    const existing = (list || []).map((item) => item.service || item).find((svc) => svc?.name === SERVICE_NAME);
+    if (existing?.id) {
+      console.log('→ Triggering Render redeploy...');
+      execSync(`render deploys create ${existing.id} --confirm`, { cwd: ROOT, stdio: 'inherit' });
+      const url = serviceUrl({ service: existing });
+      writeFileSync(API_URL_FILE, url);
+      console.log('→ API URL:', url);
+      return url;
+    }
+  } catch {}
+
   console.log('→ Creating service via Render CLI...');
   const out = execSync(
     [
