@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,80284,e=>{"use strict";var t=e.i(85737),i=e.i(73490),o=e.i(39020),u=e.i(95837);e.s(["default",0,function(){let{rollPersona:e}=(0,o.useProfile)();return(0,i.useEffect)(()=>{e()},[e]),(0,t.jsx)(u.ProfileSheet,{mode:"page"})}])}]);
